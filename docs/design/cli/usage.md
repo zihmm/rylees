@@ -8,15 +8,11 @@ the platform in the release history of the corresponding customer project.
 
 ## Synopsis
 
----
-
 ```text
 rylees <command> [options]
 ```
 
 ## Commands
-
----
 
 | Command    | Alias | Description                         |
 | :--------- | :---- | :---------------------------------- |
@@ -25,8 +21,6 @@ rylees <command> [options]
 
 ## Global options
 
----
-
 Available on every command.
 
 | Short | Long      | Value | Description                | Default |
@@ -34,8 +28,6 @@ Available on every command.
 | -V    | --version | —     | Show the installed version | —       |
 
 ## Generate
-
----
 
 Generate release notes from the commits between a start and an end reference.
 
@@ -70,8 +62,6 @@ rylees gen -s 8f2a1c4 -e HEAD -t commit
 ```
 
 ## Help
-
----
 
 Display this help text.
 
