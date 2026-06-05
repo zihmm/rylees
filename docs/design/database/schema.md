@@ -34,8 +34,9 @@ erDiagram
 
     projects {
         uuid id PK
-        uuid customer_id FK
+        varchar key
         varchar name
+        uuid customer_id FK
         text description
         uuid llm_tonality_id FK
         uuid llm_temperature_id FK
@@ -128,47 +129,48 @@ erDiagram
 
 A project belonging to a customer, configured with LLM tonality and temperature settings.
 
-| Column          | Type           | Key | References             | Notes                          |
-| --------------- | -------------- | --- | ---------------------- | ------------------------------ |
-| `id`            | `uuid`         | PK  |                        |                                |
-| `customer_id`   | `uuid`         | FK  | `customers.id`         | Owning customer                |
-| `name`          | `varchar(255)` |     |                        |                                |
-| `description`   | `text`         |     |                        |                                |
-| `llm_tonality_id`    | `uuid`         | FK  | `llm_tonality_types.id`    | Writing style preset           |
-| `llm_temperature_id` | `uuid`         | FK  | `llm_temperature_types.id` | LLM temperature preset         |
-| `created_at`    | `timestamp`    |     |                        |                                |
-| `updated_at`    | `timestamp`    |     |                        |                                |
-| `deleted_at`    | `timestamp`    |     |                        | Soft delete (`NULL` = active)  |
+| Column               | Type           | Key | References                 | Notes                         |
+| -------------------- | -------------- | --- | -------------------------- | ----------------------------- |
+| `id`                 | `uuid`         | PK  |                            |                               |
+| `key`                | `varchar(255)` |     |                            |                               |
+| `name`               | `varchar(255)` |     |                            |                               |
+| `customer_id`        | `uuid`         | FK  | `customers.id`             | Owning customer               |
+| `description`        | `text`         |     |                            |                               |
+| `llm_tonality_id`    | `uuid`         | FK  | `llm_tonality_types.id`    | Writing style preset          |
+| `llm_temperature_id` | `uuid`         | FK  | `llm_temperature_types.id` | LLM temperature preset        |
+| `created_at`         | `timestamp`    |     |                            |                               |
+| `updated_at`         | `timestamp`    |     |                            |                               |
+| `deleted_at`         | `timestamp`    |     |                            | Soft delete (`NULL` = active) |
 
 ### `customers`
 
 A client managed by an application user.
 
-| Column            | Type           | Key | References              | Notes                                |
-| ----------------- | -------------- | --- | ----------------------- | ------------------------------------ |
-| `id`              | `uuid`         | PK  |                         |                                      |
-| `company_id`      | `uuid`         | FK  | `companies.id`          | Client company                       |
-| `description`     | `text`         |     |                         |                                      |
-| `main_contact_id` | `uuid`         | FK  | `customer_contacts.id`  | Primary contact — **nullable**       |
-| `industry_id`     | `uuid`         | FK  | `industry_types.id`     | Customer industry                    |
-| `user_id`         | `uuid`         | FK  | `users.id`              | Managing application user            |
-| `created_at`      | `timestamp`    |     |                         |                                      |
-| `updated_at`      | `timestamp`    |     |                         |                                      |
-| `deleted_at`      | `timestamp`    |     |                         | Soft delete (`NULL` = active)        |
+| Column            | Type        | Key | References             | Notes                          |
+| ----------------- | ----------- | --- | ---------------------- | ------------------------------ |
+| `id`              | `uuid`      | PK  |                        |                                |
+| `company_id`      | `uuid`      | FK  | `companies.id`         | Client company                 |
+| `description`     | `text`      |     |                        |                                |
+| `main_contact_id` | `uuid`      | FK  | `customer_contacts.id` | Primary contact — **nullable** |
+| `industry_id`     | `uuid`      | FK  | `industry_types.id`    | Customer industry              |
+| `user_id`         | `uuid`      | FK  | `users.id`             | Managing application user      |
+| `created_at`      | `timestamp` |     |                        |                                |
+| `updated_at`      | `timestamp` |     |                        |                                |
+| `deleted_at`      | `timestamp` |     |                        | Soft delete (`NULL` = active)  |
 
 ### `customer_contacts`
 
 Contact persons belonging to a customer. A customer can have many contacts; the primary one is referenced by `customers.main_contact_id`.
 
-| Column        | Type           | Key | References     | Notes              |
-| ------------- | -------------- | --- | -------------- | ------------------ |
-| `id`          | `uuid`         | PK  |                |                    |
-| `customer_id` | `uuid`         | FK  | `customers.id` | Owning customer    |
-| `firstname`   | `varchar(255)` |     |                |                    |
-| `lastname`    | `varchar(255)` |     |                |                    |
-| `email`       | `varchar(255)` |     |                |                    |
-| `created_at`  | `timestamp`    |     |                |                    |
-| `updated_at`  | `timestamp`    |     |                |                    |
+| Column        | Type           | Key | References     | Notes                         |
+| ------------- | -------------- | --- | -------------- | ----------------------------- |
+| `id`          | `uuid`         | PK  |                |                               |
+| `customer_id` | `uuid`         | FK  | `customers.id` | Owning customer               |
+| `firstname`   | `varchar(255)` |     |                |                               |
+| `lastname`    | `varchar(255)` |     |                |                               |
+| `email`       | `varchar(255)` |     |                |                               |
+| `created_at`  | `timestamp`    |     |                |                               |
+| `updated_at`  | `timestamp`    |     |                |                               |
 | `deleted_at`  | `timestamp`    |     |                | Soft delete (`NULL` = active) |
 
 > **Design note:** `customers` ↔ `customer_contacts` form a deliberate circular reference (`customer_contacts.customer_id → customers.id` and `customers.main_contact_id → customer_contacts.id`). Keep `main_contact_id` **nullable** to avoid a chicken-and-egg insert: create the customer first, then its contacts, then set the main contact. Alternative pattern if you prefer to avoid the cycle: drop `main_contact_id` and add an `is_primary bool` flag on `customer_contacts`.
@@ -177,23 +179,23 @@ Contact persons belonging to a customer. A customer can have many contacts; the 
 
 A generated release note tied to a release history, with git provenance and a semantic version.
 
-| Column              | Type           | Key | References               | Notes                           |
-| ------------------- | -------------- | --- | ------------------------ | ------------------------------- |
-| `id`                | `uuid`         | PK  |                          |                                 |
-| `release_history_id`| `uuid`         | FK  | `release_histories.id`   | Parent release history          |
-| `author_id`         | `uuid`         | FK  | `users.id`               | User who authored/triggered it  |
-| `body`              | `text`         |     |                          | Generated release-note content  |
-| `version_major`     | `int`          |     |                          | SemVer major                    |
-| `version_minor`     | `int`          |     |                          | SemVer minor                    |
-| `version_patch`     | `int`          |     |                          | SemVer patch                    |
-| `branch_name`       | `varchar(255)` |     |                          |                                 |
-| `commithash_start`  | `char(64)`     |     |                          | Range start commit — nullable   |
-| `commithash_end`    | `char(64)`     |     |                          | Range end commit — nullable     |
-| `tag_start`         | `varchar(255)` |     |                          | Range start tag — nullable      |
-| `tag_end`           | `varchar(255)` |     |                          | Range end tag — nullable        |
-| `created_at`        | `timestamp`    |     |                          |                                 |
-| `updated_at`        | `timestamp`    |     |                          |                                 |
-| `deleted_at`        | `timestamp`    |     |                          | Soft delete (`NULL` = active)   |
+| Column               | Type           | Key | References             | Notes                          |
+| -------------------- | -------------- | --- | ---------------------- | ------------------------------ |
+| `id`                 | `uuid`         | PK  |                        |                                |
+| `release_history_id` | `uuid`         | FK  | `release_histories.id` | Parent release history         |
+| `author_id`          | `uuid`         | FK  | `users.id`             | User who authored/triggered it |
+| `body`               | `text`         |     |                        | Generated release-note content |
+| `version_major`      | `int`          |     |                        | SemVer major                   |
+| `version_minor`      | `int`          |     |                        | SemVer minor                   |
+| `version_patch`      | `int`          |     |                        | SemVer patch                   |
+| `branch_name`        | `varchar(255)` |     |                        |                                |
+| `commithash_start`   | `char(64)`     |     |                        | Range start commit — nullable  |
+| `commithash_end`     | `char(64)`     |     |                        | Range end commit — nullable    |
+| `tag_start`          | `varchar(255)` |     |                        | Range start tag — nullable     |
+| `tag_end`            | `varchar(255)` |     |                        | Range end tag — nullable       |
+| `created_at`         | `timestamp`    |     |                        |                                |
+| `updated_at`         | `timestamp`    |     |                        |                                |
+| `deleted_at`         | `timestamp`    |     |                        | Soft delete (`NULL` = active)  |
 
 > **Design note:** A release range can be expressed by **commit hashes** (`commithash_start`/`commithash_end`) **or** by **tags** (`tag_start`/`tag_end`). All four are nullable — populate one pair or the other, not necessarily both.
 
@@ -201,13 +203,13 @@ A generated release note tied to a release history, with git provenance and a se
 
 Groups release notes under a project.
 
-| Column       | Type   | Key | References     | Notes                              |
-| ------------ | ------ | --- | -------------- | ---------------------------------- |
-| `id`         | `uuid` | PK  |                |                                    |
-| `project_id` | `uuid` | FK  | `projects.id`  | Owning project                     |
-| `created_at` | `timestamp` |  |                | |
-| `updated_at` | `timestamp` |  |                | |
-| `deleted_at` | `timestamp` |  |                | Soft delete (`NULL` = active) |
+| Column       | Type        | Key | References    | Notes                         |
+| ------------ | ----------- | --- | ------------- | ----------------------------- |
+| `id`         | `uuid`      | PK  |               |                               |
+| `project_id` | `uuid`      | FK  | `projects.id` | Owning project                |
+| `created_at` | `timestamp` |     |               |                               |
+| `updated_at` | `timestamp` |     |               |                               |
+| `deleted_at` | `timestamp` |     |               | Soft delete (`NULL` = active) |
 
 > **Design decision:** Each `release_notes` row represents one complete release (hence `version_*` and the commit/tag range live there). `release_histories` is intentionally a thin grouping table, kept in place so release-level attributes (e.g. `title`, overall `description`) can be added later without a disruptive migration. Table and column names are kept as-is by team convention.
 
@@ -215,49 +217,49 @@ Groups release notes under a project.
 
 Application users (authentication + activation).
 
-| Column             | Type           | Key | References         | Notes                                   |
-| ------------------ | -------------- | --- | ------------------ | --------------------------------------- |
-| `id`               | `uuid`         | PK  |                    |                                         |
-| `username`         | `varchar(255)` | UK  |                    | Unique                                  |
-| `password`         | `varchar(255)` |     |                    | Store a hash, never plaintext           |
-| `is_active`        | `bool`         |     |                    |                                         |
-| `activation_token` | `varchar(255)` |     |                    | Nullable — cleared after activation     |
-| `activated_at`     | `timestamp`    |     |                    | Nullable — set on activation            |
-| `created_at`       | `timestamp`    |     |                    |                                         |
-| `updated_at`       | `timestamp`    |     |                    |                                         |
-| `deleted_at`       | `timestamp`    |     |                    | Soft delete (`NULL` = active)           |
+| Column             | Type           | Key | References | Notes                               |
+| ------------------ | -------------- | --- | ---------- | ----------------------------------- |
+| `id`               | `uuid`         | PK  |            |                                     |
+| `username`         | `varchar(255)` | UK  |            | Unique                              |
+| `password`         | `varchar(255)` |     |            | Store a hash, never plaintext       |
+| `is_active`        | `bool`         |     |            |                                     |
+| `activation_token` | `varchar(255)` |     |            | Nullable — cleared after activation |
+| `activated_at`     | `timestamp`    |     |            | Nullable — set on activation        |
+| `created_at`       | `timestamp`    |     |            |                                     |
+| `updated_at`       | `timestamp`    |     |            |                                     |
+| `deleted_at`       | `timestamp`    |     |            | Soft delete (`NULL` = active)       |
 
 ### `user_profiles`
 
 Personal details for a user, linked to a company. Holds the 1:1 FK back to its owning user.
 
-| Column       | Type           | Key | References      | Notes                              |
-| ------------ | -------------- | --- | --------------- | ---------------------------------- |
-| `id`         | `uuid`         | PK  |                 |                                    |
-| `user_id`    | `uuid`         | FK  | `users.id`      | Owning user — `UNIQUE` (enforces 1:1) |
-| `firstname`  | `varchar(255)` |     |                 |                                    |
-| `lastname`   | `varchar(255)` |     |                 |                                    |
-| `company_id` | `uuid`         | FK  | `companies.id`  |                                    |
-| `created_at` | `timestamp`    |     |                 |                                    |
-| `updated_at` | `timestamp`    |     |                 |                                    |
-| `deleted_at` | `timestamp`    |     |                 | Soft delete (`NULL` = active)      |
+| Column       | Type           | Key | References     | Notes                                 |
+| ------------ | -------------- | --- | -------------- | ------------------------------------- |
+| `id`         | `uuid`         | PK  |                |                                       |
+| `user_id`    | `uuid`         | FK  | `users.id`     | Owning user — `UNIQUE` (enforces 1:1) |
+| `firstname`  | `varchar(255)` |     |                |                                       |
+| `lastname`   | `varchar(255)` |     |                |                                       |
+| `company_id` | `uuid`         | FK  | `companies.id` |                                       |
+| `created_at` | `timestamp`    |     |                |                                       |
+| `updated_at` | `timestamp`    |     |                |                                       |
+| `deleted_at` | `timestamp`    |     |                | Soft delete (`NULL` = active)         |
 
 ### `companies`
 
 A company entity, shared by both sides of the system: the agency's own org (referenced from `user_profiles.company_id`) **and** client companies (referenced from `customers.company_id`).
 
-| Column     | Type           | Key | References | Notes |
-| ---------- | -------------- | --- | ---------- | ----- |
-| `id`       | `uuid`         | PK  |            |       |
-| `name`     | `varchar(255)` |     |            |       |
-| `street`   | `varchar(255)` |     |            |       |
-| `postcode` | `varchar(255)` |     |            |       |
-| `city`     | `varchar(255)` |     |            |       |
-| `website`  | `varchar(255)` |     |            |       |
-| `email`    | `varchar(255)` |     |            |       |
-| `created_at` | `timestamp`  |     |            |       |
-| `updated_at` | `timestamp`  |     |            |       |
-| `deleted_at` | `timestamp`  |     |            | Soft delete (`NULL` = active) |
+| Column       | Type           | Key | References | Notes                         |
+| ------------ | -------------- | --- | ---------- | ----------------------------- |
+| `id`         | `uuid`         | PK  |            |                               |
+| `name`       | `varchar(255)` |     |            |                               |
+| `street`     | `varchar(255)` |     |            |                               |
+| `postcode`   | `varchar(255)` |     |            |                               |
+| `city`       | `varchar(255)` |     |            |                               |
+| `website`    | `varchar(255)` |     |            |                               |
+| `email`      | `varchar(255)` |     |            |                               |
+| `created_at` | `timestamp`    |     |            |                               |
+| `updated_at` | `timestamp`    |     |            |                               |
+| `deleted_at` | `timestamp`    |     |            | Soft delete (`NULL` = active) |
 
 ### `llm_tonality_types`
 
@@ -272,11 +274,11 @@ Lookup table of writing-style presets.
 
 Lookup table of LLM temperature presets.
 
-| Column  | Type           | Key | Notes                       |
-| ------- | -------------- | --- | --------------------------- |
-| `id`    | `uuid`         | PK  |                             |
-| `name`  | `varchar(255)` | UK  | e.g. "precise", "creative"  |
-| `value` | `float`        |     | Numeric temperature value   |
+| Column  | Type           | Key | Notes                      |
+| ------- | -------------- | --- | -------------------------- |
+| `id`    | `uuid`         | PK  |                            |
+| `name`  | `varchar(255)` | UK  | e.g. "precise", "creative" |
+| `value` | `float`        |     | Numeric temperature value  |
 
 ### `industry_types`
 
@@ -289,21 +291,21 @@ Lookup table of customer industries.
 
 ## Relationships
 
-| From                | Column               | →   | To                       | Cardinality |
-| ------------------- | -------------------- | --- | ------------------------ | ----------- |
-| `projects`          | `customer_id`        | →   | `customers.id`           | many-to-one |
-| `projects`          | `llm_tonality_id`        | →   | `llm_tonality_types.id`      | many-to-one |
-| `projects`          | `llm_temperature_id`     | →   | `llm_temperature_types.id`   | many-to-one |
-| `customers`         | `company_id`         | →   | `companies.id`           | many-to-one |
-| `customers`         | `user_id`            | →   | `users.id`               | many-to-one |
-| `customers`         | `industry_id`        | →   | `industry_types.id`      | many-to-one |
-| `customers`         | `main_contact_id`    | →   | `customer_contacts.id`   | one-to-one (nullable) |
-| `customer_contacts` | `customer_id`        | →   | `customers.id`           | many-to-one |
-| `release_histories` | `project_id`         | →   | `projects.id`            | many-to-one |
-| `release_notes`     | `release_history_id` | →   | `release_histories.id`   | many-to-one |
-| `release_notes`     | `author_id`          | →   | `users.id`               | many-to-one |
-| `user_profiles`     | `user_id`            | →   | `users.id`               | one-to-one  |
-| `user_profiles`     | `company_id`         | →   | `companies.id`           | many-to-one |
+| From                | Column               | →   | To                         | Cardinality           |
+| ------------------- | -------------------- | --- | -------------------------- | --------------------- |
+| `projects`          | `customer_id`        | →   | `customers.id`             | many-to-one           |
+| `projects`          | `llm_tonality_id`    | →   | `llm_tonality_types.id`    | many-to-one           |
+| `projects`          | `llm_temperature_id` | →   | `llm_temperature_types.id` | many-to-one           |
+| `customers`         | `company_id`         | →   | `companies.id`             | many-to-one           |
+| `customers`         | `user_id`            | →   | `users.id`                 | many-to-one           |
+| `customers`         | `industry_id`        | →   | `industry_types.id`        | many-to-one           |
+| `customers`         | `main_contact_id`    | →   | `customer_contacts.id`     | one-to-one (nullable) |
+| `customer_contacts` | `customer_id`        | →   | `customers.id`             | many-to-one           |
+| `release_histories` | `project_id`         | →   | `projects.id`              | many-to-one           |
+| `release_notes`     | `release_history_id` | →   | `release_histories.id`     | many-to-one           |
+| `release_notes`     | `author_id`          | →   | `users.id`                 | many-to-one           |
+| `user_profiles`     | `user_id`            | →   | `users.id`                 | one-to-one            |
+| `user_profiles`     | `company_id`         | →   | `companies.id`             | many-to-one           |
 
 ## Indexes
 
@@ -312,8 +314,8 @@ Every foreign-key column carries an index for join/lookup performance. Columns a
 | Index                                    | Table               | Column               |
 | ---------------------------------------- | ------------------- | -------------------- |
 | `projects_customer_id_index`             | `projects`          | `customer_id`        |
-| `projects_llm_tonality_id_index`             | `projects`          | `llm_tonality_id`        |
-| `projects_llm_temperature_id_index`          | `projects`          | `llm_temperature_id`     |
+| `projects_llm_tonality_id_index`         | `projects`          | `llm_tonality_id`    |
+| `projects_llm_temperature_id_index`      | `projects`          | `llm_temperature_id` |
 | `customers_company_id_index`             | `customers`         | `company_id`         |
 | `customers_main_contact_id_index`        | `customers`         | `main_contact_id`    |
 | `customers_industry_id_index`            | `customers`         | `industry_id`        |
