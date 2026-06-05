@@ -1,7 +1,5 @@
 # ADR-005: Implementation of the Backend API as a Modular Monolith
 
----
-
 ## Status
 
 Accepted

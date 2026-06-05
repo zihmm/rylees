@@ -1,7 +1,5 @@
 # ADR-004: Human Review and Approval Before Publication
 
----
-
 ## Status
 
 Accepted

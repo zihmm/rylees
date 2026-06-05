@@ -1,7 +1,5 @@
 # ADR-002: Use of a Dedicated CLI Tool for Release Note Generation
 
----
-
 ## Status
 
 Accepted

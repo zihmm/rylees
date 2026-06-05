@@ -1,6 +1,4 @@
-# ADR-001: System Decomposition into CLI Tool, Web UI and Backend API
-
----
+# ADR-001: System Decomposition into CLI Tool, Web UI & API
 
 ## Status
 

@@ -1,7 +1,5 @@
 # ADR-003: Use of a Large Language Model for Release Note Generation
 
----
-
 ## Status 
 
 Accepted
