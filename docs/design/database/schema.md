@@ -38,7 +38,7 @@ erDiagram
         varchar name
         uuid customer_id FK
         text description
-        varchar token
+        varchar(64) token UK
         uuid llm_tonality_id FK
         uuid llm_temperature_id FK
     }
@@ -69,8 +69,8 @@ erDiagram
         int version_minor
         int version_patch
         varchar branch_name
-        char commithash_start
-        char commithash_end
+        char(64) commithash_start
+        char(64) commithash_end
         varchar tag_start
         varchar tag_end
     }
@@ -84,7 +84,7 @@ erDiagram
         uuid id PK
         varchar username UK
         varchar password
-        varch token
+        varchar(64) api_key UK
         bool is_active
         varchar activation_token
         timestamp activated_at
@@ -100,6 +100,7 @@ erDiagram
 
     organisations {
         uuid id PK
+        varchar slug UK
         varchar name
         varchar street
         varchar postcode
@@ -131,19 +132,21 @@ erDiagram
 
 A project belonging to a customer, configured with LLM tonality and temperature settings.
 
-| Column               | Type           | Key | References                 | Notes                         |
-| -------------------- | -------------- | --- | -------------------------- | ----------------------------- |
-| `id`                 | `uuid`         | PK  |                            |                               |
-| `key`                | `varchar(255)` |     |                            |                               |
-| `name`               | `varchar(255)` |     |                            |                               |
-| `customer_id`        | `uuid`         | FK  | `customers.id`             | Owning customer               |
-| `description`        | `text`         |     |                            |                               |
-| `token`              | `varchar(40)`  |     |                            | Unique                        |
-| `llm_tonality_id`    | `uuid`         | FK  | `llm_tonality_types.id`    | Writing style preset          |
-| `llm_temperature_id` | `uuid`         | FK  | `llm_temperature_types.id` | LLM temperature preset        |
-| `created_at`         | `timestamp`    |     |                            |                               |
-| `updated_at`         | `timestamp`    |     |                            |                               |
-| `deleted_at`         | `timestamp`    |     |                            | Soft delete (`NULL` = active) |
+| Column               | Type           | Key | References                 | Notes                                          |
+| -------------------- | -------------- | --- | -------------------------- | ---------------------------------------------- |
+| `id`                 | `uuid`         | PK  |                            |                                                |
+| `key`                | `varchar(255)` | UK* |                            | URL slug; unique per `customer_id`; auto-generated from `name` |
+| `name`               | `varchar(255)` |     |                            |                                                |
+| `customer_id`        | `uuid`         | FK  | `customers.id`             | Owning customer                                |
+| `description`        | `text`         |     |                            |                                                |
+| `token`              | `varchar(64)`  | UK  |                            | CLI auth/identification token; `Str::random(64)` on create |
+| `llm_tonality_id`    | `uuid`         | FK  | `llm_tonality_types.id`    | Writing style preset                           |
+| `llm_temperature_id` | `uuid`         | FK  | `llm_temperature_types.id` | LLM temperature preset                         |
+| `created_at`         | `timestamp`    |     |                            |                                                |
+| `updated_at`         | `timestamp`    |     |                            |                                                |
+| `deleted_at`         | `timestamp`    |     |                            | Soft delete (`NULL` = active)                  |
+
+> `projects.key` uniqueness is scoped to `customer_id`, not global. `projects.token` is globally unique.
 
 ### `customers`
 
@@ -220,18 +223,20 @@ Groups release notes under a project.
 
 Application users (authentication + activation).
 
-| Column             | Type           | Key | References | Notes                               |
-| ------------------ | -------------- | --- | ---------- | ----------------------------------- |
-| `id`               | `uuid`         | PK  |            |                                     |
-| `username`         | `varchar(255)` | UK  |            | Unique                              |
-| `password`         | `varchar(255)` |     |            | Store a hash, never plaintext       |
-| `is_active`        | `bool`         |     |            |                                     |
-| `api_key`          | `varchar(4)`   |     |            | Developers API-Key                  |
-| `activation_token` | `varchar(255)` |     |            | Nullable — cleared after activation |
-| `activated_at`     | `timestamp`    |     |            | Nullable — set on activation        |
-| `created_at`       | `timestamp`    |     |            |                                     |
-| `updated_at`       | `timestamp`    |     |            |                                     |
-| `deleted_at`       | `timestamp`    |     |            | Soft delete (`NULL` = active)       |
+| Column             | Type           | Key | References | Notes                                              |
+| ------------------ | -------------- | --- | ---------- | -------------------------------------------------- |
+| `id`               | `uuid`         | PK  |            |                                                    |
+| `username`         | `varchar(255)` | UK  |            | Login identifier; email format                     |
+| `password`         | `varchar(255)` |     |            | Bcrypt hash — never plaintext                      |
+| `api_key`          | `varchar(64)`  | UK  |            | CLI auth key; `Str::random(64)` on registration    |
+| `is_active`        | `bool`         |     |            | Default `false`; set `true` on activation          |
+| `activation_token` | `varchar(255)` |     |            | Nullable — cleared after activation                |
+| `activated_at`     | `timestamp`    |     |            | Nullable — set on activation                       |
+| `created_at`       | `timestamp`    |     |            |                                                    |
+| `updated_at`       | `timestamp`    |     |            |                                                    |
+| `deleted_at`       | `timestamp`    |     |            | Soft delete (`NULL` = active)                      |
+
+> `api_key` is used as a permanent CLI Bearer token. It is exposed only via `GET /users/me`, never in list responses.
 
 ### `user_profiles`
 
@@ -250,20 +255,23 @@ Personal details for a user, linked to a organisation. Holds the 1:1 FK back to 
 
 ### `organisations`
 
-A organisation entity, shared by both sides of the system: the agency's own org (referenced from `user_profiles.organisation_id`) **and** client organisations (referenced from `customers.organisation_id`).
+An organisation entity, shared by both sides of the system: the agency's own org (referenced from `user_profiles.organisation_id`) **and** client organisations (referenced from `customers.organisation_id`).
 
-| Column       | Type           | Key | References | Notes                         |
-| ------------ | -------------- | --- | ---------- | ----------------------------- |
-| `id`         | `uuid`         | PK  |            |                               |
-| `name`       | `varchar(255)` |     |            |                               |
-| `street`     | `varchar(255)` |     |            |                               |
-| `postcode`   | `varchar(255)` |     |            |                               |
-| `city`       | `varchar(255)` |     |            |                               |
-| `website`    | `varchar(255)` |     |            |                               |
-| `email`      | `varchar(255)` |     |            |                               |
-| `created_at` | `timestamp`    |     |            |                               |
-| `updated_at` | `timestamp`    |     |            |                               |
-| `deleted_at` | `timestamp`    |     |            | Soft delete (`NULL` = active) |
+| Column       | Type           | Key | References | Notes                                                        |
+| ------------ | -------------- | --- | ---------- | ------------------------------------------------------------ |
+| `id`         | `uuid`         | PK  |            |                                                              |
+| `slug`       | `varchar(255)` | UK  |            | URL-safe slug; auto-generated from `name` on create/update   |
+| `name`       | `varchar(255)` |     |            |                                                              |
+| `street`     | `varchar(255)` |     |            | Nullable                                                     |
+| `postcode`   | `varchar(20)`  |     |            | Nullable                                                     |
+| `city`       | `varchar(255)` |     |            | Nullable                                                     |
+| `website`    | `varchar(255)` |     |            | Nullable                                                     |
+| `email`      | `varchar(255)` |     |            | Nullable                                                     |
+| `created_at` | `timestamp`    |     |            |                                                              |
+| `updated_at` | `timestamp`    |     |            |                                                              |
+| `deleted_at` | `timestamp`    |     |            | Soft delete (`NULL` = active)                                |
+
+> **Slug generation algorithm:** lowercase `name`, replace `/[^a-z0-9]+/` with `-`, trim `-` from both ends, check global uniqueness, append `-2`, `-3`, … until unique. Used for customer subdomains (`{slug}.rylees.ai`) in the public Release History SPA.
 
 ### `llm_tonality_types`
 
@@ -332,9 +340,32 @@ Every foreign-key column carries an index for join/lookup performance. Columns a
 
 > Note: `user_profiles.user_id` is intentionally absent here — its `UNIQUE` constraint (`user_profiles_user_id_unique`) already provides the index.
 
+## Infrastructure — Subdomain Routing
+
+The platform uses three DNS records for `rylees.ai`:
+
+| DNS record | Type | Target | Purpose |
+| ---------- | ---- | ------ | ------- |
+| `api.rylees.ai` | A | API server | Backend API |
+| `console.rylees.ai` | A | Frontend server | Developer Console SPA |
+| `*.rylees.ai` | A (wildcard) | Frontend server | Customer Release History subdomains |
+
+Specific A records take precedence over the wildcard, so `api` and `console` are unaffected. The frontend server uses three nginx server blocks:
+
+- `api.rylees.ai` → PHP-FPM proxied to Laravel (`public/index.php`)
+- `console.rylees.ai` → serves `dist/console.html` as the SPA root
+- `~^(?<subdomain>.+)\.rylees\.ai$` (wildcard, excludes `console` and `api`) → serves `dist/history.html`
+
+The wildcard TLS certificate covers `*.rylees.ai`. `api.rylees.ai` and `console.rylees.ai` use their own certificates.
+
+No DNS API calls are made when a customer is created — the `organisations.slug` is generated by the application, and the wildcard DNS + nginx configuration automatically makes `{slug}.rylees.ai` resolvable without any additional provisioning step.
+
 ## Notes & Data-Integrity Observations
 
-1. **`users.password`**: ensure this column holds a hashed value (e.g. bcrypt/argon2), never plaintext.
+1. **`users.password`**: ensure this column holds a bcrypt hash (`Hash::make()`), never plaintext.
+2. **`users.api_key`**: generated via `Str::random(64)` on registration; used as a permanent CLI Bearer token. Must not appear in list responses.
+3. **`projects.token`**: generated via `Str::random(64)` on project creation; must not appear in list responses.
+4. **`organisations.slug`**: auto-generated from `name` on create; used to construct the public Release History subdomain URL.
 
 ## Naming Conventions
 

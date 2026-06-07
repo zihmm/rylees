@@ -1,4 +1,6 @@
-# REST API Endpoints for CLI tool
+# REST API Endpoints – CLI Tool
+
+The CLI tool uses two endpoints to fetch project context before generation and to publish the approved release note.
 
 ## Base URL
 
@@ -8,34 +10,36 @@ https://api.rylees.ai/v1
 
 ## Endpoints
 
-| Method | Endpoint                                                                                  | Description                                                                    | Auth |
-| ------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | :--: |
-| GET    | [/projects/{project-token}](#get-projects-project-token)                                  | Retrieve project information, including project context and LLM configuration. |  y   |
-| POST   | [/projects/{project-token}/release-history](#post-projects-project-token-release-history) | Publish a generated release note to the project's release history.             |  y   |
+| Method | Endpoint | Description | Auth |
+| ------ | -------- | ----------- | :--: |
+| GET | [/projects/{projectToken}](#get-projectsprojecttoken) | Retrieve project context and LLM configuration. | y |
+| POST | [/projects/{projectToken}/release-history](#post-projectsprojecttokenrelease-history) | Publish a generated release note. | y |
 
 ## Authentication
 
-All API endpoints require authentication using a personal API token.
-
-Include the token in the `Authorization` header of every request:
+CLI endpoints authenticate using the developer's personal `api_key` (stored in `users.api_key`, generated on registration). This is **not** a Sanctum session token — it is a permanent 64-character key used as a Bearer token.
 
 ```http
-Authorization: Bearer <api-token>
+Authorization: Bearer <api_key>
 ```
 
-# GET /projects/{project-token}
+The API resolves the user by looking up `users.api_key = <token>` where `users.is_active = true`. This is handled by a custom `AuthenticateWithApiKey` middleware that runs before the standard Sanctum guard.
 
-Retrieves project information required by the CLI tool to generate accurate release notes. The response includes customer context and LLM configuration settings.
+---
 
-## Request
+## GET /projects/{projectToken}
+
+Retrieves project information required by the CLI to generate release notes. `{projectToken}` resolves via `projects.token`. The API verifies that the project's customer belongs to the authenticated developer.
+
+### Request
 
 ```bash
 curl -X GET \
-  "https://api.rylees.ai/v1/projects/{project-token}" \
-  -H "Authorization: Bearer <api-token>"
+  "https://api.rylees.ai/v1/projects/{projectToken}" \
+  -H "Authorization: Bearer <api_key>"
 ```
 
-## Response
+### Response `200 OK`
 
 ```json
 {
@@ -49,21 +53,36 @@ curl -X GET \
     "industry": "Architecture"
   },
   "llm": {
-    "temperature": 0.4
+    "temperature": 0.5,
+    "tonality": "professional"
   }
 }
 ```
 
-# POST /projects/{project-token}/release-history
+The CLI uses `customer.name`, `customer.industry`, `llm.temperature`, `llm.tonality`, and `description` to build the LLM prompts. If `RYLEES_LLM_TEMPERATURE` is set in the local `.env`, it overrides `llm.temperature`.
 
-Publishes a generated release note and adds it to the project's release history.
+---
 
-## Request
+## POST /projects/{projectToken}/release-history
+
+Publishes a release note. The **version number is computed server-side** — the CLI sends only the bump direction, not the target version.
+
+### Version computation (server-side)
+
+1. Find the latest `release_note` for this project's `release_history`, ordered by `created_at DESC`.
+2. If none exists, treat current version as `0.0.0`.
+3. Apply the bump:
+   - `major` → `(major+1).0.0`
+   - `minor` → `major.(minor+1).0`
+   - `patch` → `major.minor.(patch+1)`
+4. Persist `version_major`, `version_minor`, `version_patch` on the new `release_notes` row.
+
+### Request
 
 ```bash
 curl -X POST \
-  "https://api.rylees.ai/v1/projects/{project-token}" \
-  -H "Authorization: Bearer <api-token>" \
+  "https://api.rylees.ai/v1/projects/{projectToken}/release-history" \
+  -H "Authorization: Bearer <api_key>" \
   -H "Content-Type: application/json" \
   -d '{
     "startRef": "8f2a1c4",
@@ -71,38 +90,33 @@ curl -X POST \
     "type": "commits",
     "branchName": "development",
     "body": "Several usability improvements and bug fixes have been implemented.",
-    "version": {
-      "major": 1,
-      "minor": 3,
-      "patch": 0
-    }
+    "versionBump": "minor"
   }'
 ```
 
-## Request Fields
+### Request fields
 
-| Field      | Description                                                   |
-| ---------- | ------------------------------------------------------------- |
-| startRef   | Git reference representing the start of the comparison range. |
-| endRef     | Git reference representing the end of the comparison range.   |
-| type       | Source type used for generation (`commits`, `tag`).           |
-| branchName | Name of the source branch.                                    |
-| body       | Generated release note content.                               |
-| version    | Semantic version associated with the release note.            |
+| Field | Type | Required | Values | Description |
+| ----- | ---- | -------- | ------ | ----------- |
+| `startRef` | string | yes | — | Git ref (hash or tag) for range start |
+| `endRef` | string | yes | — | Git ref (hash or tag) for range end |
+| `type` | string | yes | `commits`, `tag` | Determines which columns to populate |
+| `branchName` | string | no | — | Source branch name |
+| `body` | string | yes | — | Approved release note text |
+| `versionBump` | string | yes | `major`, `minor`, `patch` | Bump direction; version computed server-side |
 
-## Response
+**Column population logic:**
+- `type = "commits"` → populates `commithash_start` and `commithash_end`; leaves `tag_start` and `tag_end` null
+- `type = "tag"` → populates `tag_start` and `tag_end`; leaves `commithash_start` and `commithash_end` null
+
+### Response `201 Created`
 
 ```json
 {
-  "id": "8d4c8a16-ba88-4377-8d34-6e18c313903b",
+  "id": "84d1e484-d515-43d5-8e40-f80ca92cc716",
   "status": "published",
-  "version": "1.3.0"
+  "version": "0.1.0"
 }
 ```
 
-## Status Values
-
-| Status    | Description                                                     |
-| --------- | --------------------------------------------------------------- |
-| published | The release note was successfully published.                    |
-| rejected  | The release note was rejected by the API and was not published. |
+The CLI prints `status` and `version` to stdout after a successful publish.
