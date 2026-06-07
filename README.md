@@ -18,7 +18,7 @@ Rylees bridges the gap between a developer's Git history and what customers actu
 
 ## Project Context
 
-This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification to implementation.
+This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification and implementation to deployment.
 
 ## AI Disclaimer
 This project was built under heavy AI-assisted engineering. Architecture and technical specification were carefully crafted by the author, using AI as a thinking partner to challenge assumptions and sharpen decisions. The spec-driven implementation was largely written and orchestrated by AI.
