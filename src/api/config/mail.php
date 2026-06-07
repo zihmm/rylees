@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -98,13 +100,13 @@ return [
         ],
 
         'mailtrap' => [
-	        'transport' => 'smtp',
-	        'host' => env('MAIL_HOST', 'sandbox.smtp.mailtrap.io'),
-	        'port' => env('MAIL_PORT', 587),
-	        'username' => env('MAIL_USERNAME'),
-	        'password' => env('MAIL_PASSWORD'),
-	        'timeout' => null,
-	        'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            'transport' => 'smtp',
+            'host' => env('MAIL_HOST', 'sandbox.smtp.mailtrap.io'),
+            'port' => env('MAIL_PORT', 587),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
     ],
 
