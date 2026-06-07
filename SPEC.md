@@ -6,7 +6,7 @@ Purpose: Defines the complete technical specification for the Rylees platform â€
 
 ## Normative Language
 
-The key words MUST, MUST NOT, REQUIRED, SHOULD, SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be interpreted as described in RFC 2119.
+The key words `MUST`, `MUST NOT`, `REQUIRED`, `SHOULD`, `SHOULD NOT`, `RECOMMENDED`, `MAY`, and `OPTIONAL` in this document are to be interpreted as described in RFC 2119.
 
 ## 1. Purpose and Scope
 
