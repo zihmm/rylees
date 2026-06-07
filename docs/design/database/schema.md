@@ -8,7 +8,7 @@ Technical reference for the database.
 - Each customer has one or more **projects**.
 - A project carries two LLM generation parameters: a **tonality** (writing style) and a **temperature** (sampling randomness).
 - Every project accumulates **release histories**, and each release history holds **release notes** generated from git metadata (branch, commit-hash range, tag range, semantic version).
-- Users have a **profile**, and profiles belong to a **company**.
+- Users have a **profile**, and profiles belong to a **organisation**.
 
 > All primary keys are `uuid` unless noted otherwise.
 
@@ -25,12 +25,12 @@ erDiagram
     release_histories ||--o{ release_notes : "contains"
     users ||--o{ release_notes : "authors"
     users ||--o{ customers : "owns"
-    tonality_types ||--o{ projects : "styles"
-    temperature_types ||--o{ projects : "configures"
+    llm_tonality_types ||--o{ projects : "styles"
+    llm_temperature_types ||--o{ projects : "configures"
     industry_types ||--o{ customers : "classifies"
     users ||--o| user_profiles : "has"
-    companies ||--o{ user_profiles : "employs"
-    companies ||--o{ customers : "is"
+    organisations ||--o{ user_profiles : "employs"
+    organisations ||--o{ customers : "is"
 
     projects {
         uuid id PK
@@ -38,13 +38,14 @@ erDiagram
         varchar name
         uuid customer_id FK
         text description
+        varchar token
         uuid llm_tonality_id FK
         uuid llm_temperature_id FK
     }
 
     customers {
         uuid id PK
-        uuid company_id FK
+        uuid organisation_id FK
         text description
         uuid main_contact_id FK
         uuid industry_id FK
@@ -83,6 +84,7 @@ erDiagram
         uuid id PK
         varchar username UK
         varchar password
+        varch token
         bool is_active
         varchar activation_token
         timestamp activated_at
@@ -93,10 +95,10 @@ erDiagram
         uuid user_id FK
         varchar firstname
         varchar lastname
-        uuid company_id FK
+        uuid organisation_id FK
     }
 
-    companies {
+    organisations {
         uuid id PK
         varchar name
         varchar street
@@ -136,6 +138,7 @@ A project belonging to a customer, configured with LLM tonality and temperature 
 | `name`               | `varchar(255)` |     |                            |                               |
 | `customer_id`        | `uuid`         | FK  | `customers.id`             | Owning customer               |
 | `description`        | `text`         |     |                            |                               |
+| `token`              | `varchar(40)`  |     |                            | Unique                        |
 | `llm_tonality_id`    | `uuid`         | FK  | `llm_tonality_types.id`    | Writing style preset          |
 | `llm_temperature_id` | `uuid`         | FK  | `llm_temperature_types.id` | LLM temperature preset        |
 | `created_at`         | `timestamp`    |     |                            |                               |
@@ -149,7 +152,7 @@ A client managed by an application user.
 | Column            | Type        | Key | References             | Notes                          |
 | ----------------- | ----------- | --- | ---------------------- | ------------------------------ |
 | `id`              | `uuid`      | PK  |                        |                                |
-| `company_id`      | `uuid`      | FK  | `companies.id`         | Client company                 |
+| `organisation_id` | `uuid`      | FK  | `organisations.id`     | Client organisation            |
 | `description`     | `text`      |     |                        |                                |
 | `main_contact_id` | `uuid`      | FK  | `customer_contacts.id` | Primary contact — **nullable** |
 | `industry_id`     | `uuid`      | FK  | `industry_types.id`    | Customer industry              |
@@ -223,6 +226,7 @@ Application users (authentication + activation).
 | `username`         | `varchar(255)` | UK  |            | Unique                              |
 | `password`         | `varchar(255)` |     |            | Store a hash, never plaintext       |
 | `is_active`        | `bool`         |     |            |                                     |
+| `api_key`          | `varchar(4)`   |     |            | Developers API-Key                  |
 | `activation_token` | `varchar(255)` |     |            | Nullable — cleared after activation |
 | `activated_at`     | `timestamp`    |     |            | Nullable — set on activation        |
 | `created_at`       | `timestamp`    |     |            |                                     |
@@ -231,22 +235,22 @@ Application users (authentication + activation).
 
 ### `user_profiles`
 
-Personal details for a user, linked to a company. Holds the 1:1 FK back to its owning user.
+Personal details for a user, linked to a organisation. Holds the 1:1 FK back to its owning user.
 
-| Column       | Type           | Key | References     | Notes                                 |
-| ------------ | -------------- | --- | -------------- | ------------------------------------- |
-| `id`         | `uuid`         | PK  |                |                                       |
-| `user_id`    | `uuid`         | FK  | `users.id`     | Owning user — `UNIQUE` (enforces 1:1) |
-| `firstname`  | `varchar(255)` |     |                |                                       |
-| `lastname`   | `varchar(255)` |     |                |                                       |
-| `company_id` | `uuid`         | FK  | `companies.id` |                                       |
-| `created_at` | `timestamp`    |     |                |                                       |
-| `updated_at` | `timestamp`    |     |                |                                       |
-| `deleted_at` | `timestamp`    |     |                | Soft delete (`NULL` = active)         |
+| Column            | Type           | Key | References         | Notes                                 |
+| ----------------- | -------------- | --- | ------------------ | ------------------------------------- |
+| `id`              | `uuid`         | PK  |                    |                                       |
+| `user_id`         | `uuid`         | FK  | `users.id`         | Owning user — `UNIQUE` (enforces 1:1) |
+| `firstname`       | `varchar(255)` |     |                    |                                       |
+| `lastname`        | `varchar(255)` |     |                    |                                       |
+| `organisation_id` | `uuid`         | FK  | `organisations.id` |                                       |
+| `created_at`      | `timestamp`    |     |                    |                                       |
+| `updated_at`      | `timestamp`    |     |                    |                                       |
+| `deleted_at`      | `timestamp`    |     |                    | Soft delete (`NULL` = active)         |
 
-### `companies`
+### `organisations`
 
-A company entity, shared by both sides of the system: the agency's own org (referenced from `user_profiles.company_id`) **and** client companies (referenced from `customers.company_id`).
+A organisation entity, shared by both sides of the system: the agency's own org (referenced from `user_profiles.organisation_id`) **and** client organisations (referenced from `customers.organisation_id`).
 
 | Column       | Type           | Key | References | Notes                         |
 | ------------ | -------------- | --- | ---------- | ----------------------------- |
@@ -296,7 +300,7 @@ Lookup table of customer industries.
 | `projects`          | `customer_id`        | →   | `customers.id`             | many-to-one           |
 | `projects`          | `llm_tonality_id`    | →   | `llm_tonality_types.id`    | many-to-one           |
 | `projects`          | `llm_temperature_id` | →   | `llm_temperature_types.id` | many-to-one           |
-| `customers`         | `company_id`         | →   | `companies.id`             | many-to-one           |
+| `customers`         | `organisation_id`    | →   | `organisations.id`         | many-to-one           |
 | `customers`         | `user_id`            | →   | `users.id`                 | many-to-one           |
 | `customers`         | `industry_id`        | →   | `industry_types.id`        | many-to-one           |
 | `customers`         | `main_contact_id`    | →   | `customer_contacts.id`     | one-to-one (nullable) |
@@ -305,7 +309,7 @@ Lookup table of customer industries.
 | `release_notes`     | `release_history_id` | →   | `release_histories.id`     | many-to-one           |
 | `release_notes`     | `author_id`          | →   | `users.id`                 | many-to-one           |
 | `user_profiles`     | `user_id`            | →   | `users.id`                 | one-to-one            |
-| `user_profiles`     | `company_id`         | →   | `companies.id`             | many-to-one           |
+| `user_profiles`     | `organisation_id`    | →   | `organisations.id`         | many-to-one           |
 
 ## Indexes
 
@@ -316,7 +320,7 @@ Every foreign-key column carries an index for join/lookup performance. Columns a
 | `projects_customer_id_index`             | `projects`          | `customer_id`        |
 | `projects_llm_tonality_id_index`         | `projects`          | `llm_tonality_id`    |
 | `projects_llm_temperature_id_index`      | `projects`          | `llm_temperature_id` |
-| `customers_company_id_index`             | `customers`         | `company_id`         |
+| `customers_organisation_id_index`        | `customers`         | `organisation_id`    |
 | `customers_main_contact_id_index`        | `customers`         | `main_contact_id`    |
 | `customers_industry_id_index`            | `customers`         | `industry_id`        |
 | `customers_user_id_index`                | `customers`         | `user_id`            |
@@ -324,7 +328,7 @@ Every foreign-key column carries an index for join/lookup performance. Columns a
 | `release_notes_release_history_id_index` | `release_notes`     | `release_history_id` |
 | `release_notes_author_id_index`          | `release_notes`     | `author_id`          |
 | `release_histories_project_id_index`     | `release_histories` | `project_id`         |
-| `user_profiles_company_id_index`         | `user_profiles`     | `company_id`         |
+| `user_profiles_organisation_id_index`    | `user_profiles`     | `organisation_id`    |
 
 > Note: `user_profiles.user_id` is intentionally absent here — its `UNIQUE` constraint (`user_profiles_user_id_unique`) already provides the index.
 
