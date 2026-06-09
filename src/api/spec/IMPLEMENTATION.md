@@ -2,7 +2,7 @@
 
 ## Context
 
-The `src/api/` directory contains a stock Laravel 13 installation (no Sanctum, no Pest, no modules, no API routes file). The full specification lives in `src/api/spec/SPEC.md`. The goal is to build the complete Rylees Backend API — a modular monolith serving three client types (CLI, Developer Console, Public Release History) — from that spec.
+The `src/api/` directory contains a stock Laravel 13 installation. The full specification lives in `src/api/spec/SPEC.md` and the root `SPEC.md`. The goal is to build the complete Rylees Backend API — a modular monolith serving three client types (CLI, Developer Console, Public Release History) — from that spec.
 
 **Rule:** Commit at the end of each phase once all tests (current + all previous phases) are green. Run `vendor/bin/pint` before every commit.
 
@@ -377,7 +377,11 @@ vendor/bin/pest --coverage
 
 ## Phase 8 — Postmane Testsuite
 
-After Phase 7 verification, prepare a [Postman](https://www.postman.com) test suite under `tests/Postman/Api`. Cover each API endpoint and prepare a `test` and a `production` environment. Use variables like base_url and api_token per environment. Fill in meaningful payload in requests.
+## Phase 8 — Postman Test Suite
+ 
+- Create tests/Postman/Api/ collection covering all endpoints
+- Two environments: test and production with base_url + api_token variables
+- Meaningful payloads in each request
 
 ---
 
