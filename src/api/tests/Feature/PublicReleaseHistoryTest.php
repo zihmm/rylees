@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\AI\Services\TranslationService;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Project\Models\Project;
 use App\Modules\ReleaseHistory\Models\ReleaseHistory;
@@ -71,4 +72,45 @@ test('test_translate_with_invalid_language_returns_422', function (): void
 
     $response->assertStatus(422);
     expect($response->json('code'))->toBe('validation_error');
+});
+
+test('test_translate_returns_translated_bodies', function (): void
+{
+    [$organisation, $customer, $project, $history, $newest] = makePublicReleaseHistorySetup();
+
+    // TranslationService is final; bind an anonymous test double that records
+    // the arguments it receives and returns translated bodies.
+    $fake = new class
+    {
+        /** @var array<string, mixed> */
+        public array $received = [];
+
+        public function translate(array $notes, string $language): array
+        {
+            $this->received = ['notes' => $notes, 'language' => $language];
+
+            return array_map(
+                fn (array $note): array => ['id' => $note['id'], 'body' => 'FR: '.$note['body']],
+                $notes
+            );
+        }
+    };
+
+    $this->app->instance(TranslationService::class, $fake);
+
+    $response = $this->getJson("/v1/public/release-history/{$organisation->slug}/{$project->key}/translate?language=fr");
+
+    $response->assertStatus(200);
+    expect($response->json('language'))->toBe('fr');
+
+    // Service was handed the original German bodies (newest first) and the language.
+    expect($fake->received['language'])->toBe('fr');
+    expect($fake->received['notes'])->toHaveCount(2);
+    expect($fake->received['notes'][0]['body'])->toBe('Newest release.');
+
+    // Response items carry the reconstructed version + the translated body.
+    expect($response->json('items.0.version'))->toBe('1.1.0');
+    expect($response->json('items.0.body'))->toBe('FR: Newest release.');
+    expect($response->json('items.1.version'))->toBe('1.0.0');
+    expect($response->json('items.1.body'))->toBe('FR: Older release.');
 });

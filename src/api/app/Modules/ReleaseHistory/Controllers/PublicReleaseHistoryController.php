@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\ReleaseHistory\Controllers;
 
 use App\Models\Organisation;
+use App\Modules\AI\Services\TranslationService;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Project\Models\Project;
 use App\Modules\ReleaseHistory\Repositories\ReleaseHistoryRepository;
 use App\Modules\ReleaseHistory\Resources\ReleaseNoteResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 final class PublicReleaseHistoryController
 {
@@ -46,16 +48,24 @@ final class PublicReleaseHistoryController
 
         $notes = $this->repository->orderedNotes($history);
 
-        $service = app(\App\Modules\AI\Services\TranslationService::class);
-
-        $translated = $service->translate(
+        $translated = app(TranslationService::class)->translate(
             $notes->map(fn ($n): array => ['id' => $n->id, 'body' => $n->body])->toArray(),
             $validated['language'],
         );
 
+        // The AI returns only the translated "body" per id; "version" is
+        // reconstructed from the note's own version columns, never the AI.
+        $bodyById = Collection::make($translated)->keyBy('id');
+
+        $items = $notes->map(fn ($n): array => [
+            'id' => $n->id,
+            'version' => "{$n->version_major}.{$n->version_minor}.{$n->version_patch}",
+            'body' => $bodyById[$n->id]['body'] ?? $n->body,
+        ])->values();
+
         return response()->json([
             'language' => $validated['language'],
-            'items' => $translated,
+            'items' => $items,
         ]);
     }
 
