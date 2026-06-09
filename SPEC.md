@@ -10,7 +10,7 @@ The key words `MUST`, `MUST NOT`, `REQUIRED`, `SHOULD`, `SHOULD NOT`, `RECOMMEND
 
 ## 1. Purpose and Scope
 
-Rylees is a two-component platform for automated, LLM-assisted release-note generation and publication.
+Rylees is a 3 component platform for automated, LLM-assisted release-note generation and publication.
 
 **Components in scope for v1:**
 
