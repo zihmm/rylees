@@ -17,9 +17,12 @@ final class AuthenticateWithApiKey
 
         if ($bearer)
         {
+            // Resolve the owning user regardless of activation state; the
+            // EnsureUserIsActive ("active") middleware enforces the 403 for
+            // inactive accounts so an inactive api_key yields inactive_user,
+            // not a generic 401. Soft-deleted users never resolve.
             $user = User::query()
                 ->where('api_key', $bearer)
-                ->where('is_active', true)
                 ->whereNull('deleted_at')
                 ->first();
 
