@@ -373,6 +373,14 @@ php artisan migrate:fresh --seed
 vendor/bin/pest --coverage
 ```
 
+---
+
+## Phase 8 — Postmane Testsuite
+
+After Phase 7 verification, prepare a [Postman](https://www.postman.com) test suite under `tests/Postman/Api`. Cover each API endpoint and prepare a `test` and a `production` environment. Use variables like base_url and api_token per environment. Fill in meaningful payload in requests.
+
+---
+
 All tests must pass. Spot-check acceptance criteria manually:
 - `GET /up` → 200
 - `POST /v1/users/register` → 201, activation email queued
