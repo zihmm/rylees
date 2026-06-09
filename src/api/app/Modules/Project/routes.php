@@ -2,4 +2,13 @@
 
 declare(strict_types=1);
 
-// Project module routes — populated in a later phase.
+use App\Modules\Project\Controllers\ProjectController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth:sanctum', 'active'])->group(function ()
+{
+    Route::get('/customers/{customer}/projects', [ProjectController::class, 'index']);
+    Route::post('/customers/{customer}/projects', [ProjectController::class, 'store']);
+    Route::get('/customers/{customer}/projects/{project}', [ProjectController::class, 'show']);
+    Route::patch('/customers/{customer}/projects/{project}', [ProjectController::class, 'update']);
+});
