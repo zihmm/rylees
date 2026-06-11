@@ -9,6 +9,19 @@ app = typer.Typer(name="rylees", no_args_is_help=True)
 SEPARATOR = "─" * 57
 
 
+def _scrub(message: str, *secrets: str) -> str:
+    """Redact secrets (tokens/keys) that error messages may echo back.
+
+    httpx embeds the request URL in its error strings, and the project token
+    travels in that URL — so a failed API call would otherwise leak it to
+    stderr/CI logs.
+    """
+    for secret in secrets:
+        if secret:
+            message = message.replace(secret, "***")
+    return message
+
+
 def _display_draft(draft: str) -> None:
     print(SEPARATOR)
     print("Generated release note:\n")
@@ -81,7 +94,8 @@ def _run_generate(
     try:
         project = api_client.get_project(config.project_token)
     except Exception as e:
-        typer.echo(f"Failed to fetch project config: {e}", err=True)
+        msg = _scrub(str(e), config.project_token, config.api_token)
+        typer.echo(f"Failed to fetch project config: {msg}", err=True)
         raise typer.Exit(code=1)
 
     # Step 3 — Apply temperature override if set
@@ -104,11 +118,15 @@ def _run_generate(
     analysis = analyzer.analyze(commits, diff)
 
     # Step 6 — Generate release note draft
-    generator = ReleaseNotesGenerator(model=config.llm_model, temperature=temperature)
     try:
+        generator = ReleaseNotesGenerator(model=config.llm_model, temperature=temperature)
         draft = generator.generate(analysis, project)
     except GenerationError as e:
         typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
+    except Exception as e:
+        msg = _scrub(str(e), config.openai_api_key, config.project_token, config.api_token)
+        typer.echo(f"Release note generation failed: {msg}", err=True)
         raise typer.Exit(code=1)
 
     publisher = RNPublisher(api_client, config.project_token)
@@ -128,7 +146,8 @@ def _run_generate(
                 ref_type=ref_type_api,
             )
         except Exception as e:
-            typer.echo(f"Publish failed: {e}", err=True)
+            msg = _scrub(str(e), config.project_token, config.api_token)
+            typer.echo(f"Publish failed: {msg}", err=True)
             raise typer.Exit(code=1)
         typer.echo(f"Published: {result['status']} — version {result['version']}")
         return
@@ -150,7 +169,8 @@ def _run_generate(
                     ref_type=ref_type_api,
                 )
             except Exception as e:
-                typer.echo(f"Publish failed: {e}", err=True)
+                msg = _scrub(str(e), config.project_token, config.api_token)
+                typer.echo(f"Publish failed: {msg}", err=True)
                 raise typer.Exit(code=1)
             typer.echo(f"Published: {result['status']} — version {result['version']}")
             return
@@ -161,6 +181,10 @@ def _run_generate(
                 current_draft = generator.generate(analysis, project)
             except GenerationError as e:
                 typer.echo(str(e), err=True)
+                raise typer.Exit(code=1)
+            except Exception as e:
+                msg = _scrub(str(e), config.openai_api_key, config.project_token, config.api_token)
+                typer.echo(f"Release note generation failed: {msg}", err=True)
                 raise typer.Exit(code=1)
 
         elif choice == "e":

@@ -21,6 +21,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
 
+# Ship .env.example inside the installed package (AC-CLI-02).
+[tool.hatch.build.targets.wheel.force-include]
+".env.example" = "app/.env.example"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
