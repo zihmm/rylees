@@ -1,0 +1,33 @@
+[project]
+name = "rylees"
+version = "0.1.0"
+description = "LLM-assisted release note generator and publisher"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.12",
+    "langchain-openai>=0.2",
+    "gitpython>=3.1",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+rylees = "app.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# Ship .env.example inside the installed package (AC-CLI-02).
+[tool.hatch.build.targets.wheel.force-include]
+".env.example" = "app/.env.example"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-httpx>=0.30",
+    "respx>=0.21",
+]
