@@ -41,7 +41,6 @@ onMounted(async () => {
   }
 });
 
-// Language switching plumbing retained (no switcher UI per DESIGN-SPEC-RH §8 deviation 2).
 async function switchLanguage(lang) {
   if (lang === activeLanguage.value) return;
   if (lang === 'de') {
@@ -92,7 +91,8 @@ defineExpose({ switchLanguage, face, activeLanguage });
       >History</span>
     </template>
 
-    <!-- Header button per face -->
+    <!-- Header button per face. DE/EN/FR language switcher is deferred to a
+         later feature (DESIGN-SPEC-RH §8); switchLanguage stays wired for it. -->
     <template #button>
       <button
         v-if="face === 'a'"

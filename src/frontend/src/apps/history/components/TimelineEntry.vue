@@ -39,7 +39,7 @@ defineProps({
       <p class="text-[15px] leading-[22px] text-black whitespace-pre-line">{{ item.body }}</p>
     </template>
 
-    <!-- Meta: relative date only -->
+    <!-- Meta date -->
     <p class="mt-2 text-[13px] leading-[22px] text-meta">
       {{ relative(item.publishedAt, language) }}
     </p>

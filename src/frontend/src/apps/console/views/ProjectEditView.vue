@@ -30,18 +30,24 @@ const releaseNotes = ref([]);
 const form = reactive({ name: '', description: '', language: 'en', llm_tonality_id: '', llm_temperature_id: '' });
 
 onMounted(async () => {
-  const [ton, temp, p] = await Promise.all([
-    getLlmTonalities().then((r) => (tonalities.value = r.data.items.map((i) => ({ value: i.id, label: i.name })))),
-    getLlmTemperatures().then((r) => (temperatures.value = r.data.items.map((i) => ({ value: i.id, label: `${i.name} (${i.value})` })))),
+  const [, , p] = await Promise.all([
+    getLlmTonalities().then((r) => (tonalities.value = r.data.items.map((i) => ({ value: i.id, label: i.name, rawName: i.name })))),
+    getLlmTemperatures().then((r) => (temperatures.value = r.data.items.map((i) => ({ value: i.id, label: `${i.name} (${i.value})`, rawName: i.name, rawValue: i.value })))),
     store.fetchProject(customerId, id),
   ]);
+  // GET project returns llm.{tonality,temperature} (names/values), not the *_id fields —
+  // match them back to the loaded reference data to preselect the dropdowns.
+  const matchedTonality = tonalities.value.find((t) => t.rawName === p.llm?.tonality);
+  const matchedTemperature = temperatures.value.find(
+    (t) => t.rawName === p.llm?.temperature || String(t.rawValue) === String(p.llm?.temperature)
+  );
   token.value = p.token || '';
   Object.assign(form, {
     name: p.name || '',
     description: p.description || '',
     language: p.language || 'en',
-    llm_tonality_id: p.llm_tonality_id || '',
-    llm_temperature_id: p.llm_temperature_id || '',
+    llm_tonality_id: p.llm_tonality_id || matchedTonality?.value || '',
+    llm_temperature_id: p.llm_temperature_id || matchedTemperature?.value || '',
   });
   try {
     if (p.customer?.organisation_slug && p.key) {
@@ -49,7 +55,7 @@ onMounted(async () => {
       releaseNotes.value = res.data.items || [];
     }
   } catch {
-    /* ignore */
+    /* public history may be unavailable */
   }
 });
 
@@ -63,7 +69,7 @@ async function save() {
   const payload = {
     name: form.name,
     description: form.description,
-    language: form.language,
+    language: form.language, // new project field (backend-dependent, DESIGN-SPEC-DL §11.4)
     llm_tonality_id: form.llm_tonality_id,
     llm_temperature_id: form.llm_temperature_id,
   };

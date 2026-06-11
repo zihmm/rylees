@@ -65,13 +65,23 @@ describe('ReleaseHistoryView', () => {
     expect(document.title).toBe('Member Portal — Release History');
   });
 
-  test('renders timeline entries with version badge and date', async () => {
+  test('renders timeline entries with version badge and relative date', async () => {
     const { wrapper } = await mountView();
     const text = wrapper.text();
     expect(text).toContain('v3.5.0');
     expect(text).toContain('v3.4.1');
-    // Relative German date (default language) is rendered somewhere.
-    expect(text).toMatch(/vor|Jahr|Monat|Tag/i);
+    // Timeline uses localized relative dates (German "vor …") per DESIGN-SPEC-RH §8.1.
+    expect(text).toMatch(/vor\s/);
+  });
+
+  test('language switcher UI is deferred (not rendered)', async () => {
+    // Per DESIGN-SPEC-RH §8 deviation 2 the DE/EN/FR switcher is deferred;
+    // switchLanguage stays wired (exposed) but no switcher buttons are shown.
+    const { wrapper } = await mountView();
+    const buttons = wrapper.findAll('button').map((button) => button.text().toLowerCase());
+    expect(buttons).not.toContain('en');
+    expect(buttons).not.toContain('fr');
+    expect(typeof wrapper.vm.switchLanguage).toBe('function');
   });
 
   test('on 404 renders NotFoundView', async () => {

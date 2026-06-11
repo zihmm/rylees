@@ -25,7 +25,12 @@ const project = {
 
 const releaseHistory = {
   items: [
-    { id: 'r1', version: '3.5.0', body: 'Latest release notes body.', publishedAt: '2026-06-01T10:00:00Z' },
+    {
+      id: 'r1',
+      version: '3.5.0',
+      body: 'Latest release notes body with enough detail to verify the summary column truncates after the first one hundred characters as required by the spec.',
+      publishedAt: '2026-06-01T10:00:00Z',
+    },
   ],
 };
 
@@ -85,12 +90,20 @@ describe('ProjectDetailView', () => {
     expect(writeText).toHaveBeenCalledWith('ryl_secret_token_123');
   });
 
-  test('release notes render version, relative date and body in the sidebar', async () => {
+  test('release notes render version, absolute date and body in the sidebar', async () => {
     const { wrapper } = await mountView();
     const text = wrapper.text();
-    expect(text).toContain('Latest release notes body.');
+    expect(text).toContain('Latest release notes body with enough detail');
     expect(text).toContain('v3.5.0');
-    // Localized relative time from dayjs.
-    expect(text).toMatch(/vor|Jahr|Monat|Tag/i);
+    expect(text).toContain('01. Juni 2026');
+  });
+
+  test('release history table renders the first 100 body characters', async () => {
+    const { wrapper } = await mountView();
+    const tableText = wrapper.find('table').text();
+    expect(tableText).toContain('Version');
+    expect(tableText).toContain('Published');
+    expect(tableText).toContain('Summary');
+    expect(tableText).toContain(releaseHistory.items[0].body.slice(0, 100) + '...');
   });
 });

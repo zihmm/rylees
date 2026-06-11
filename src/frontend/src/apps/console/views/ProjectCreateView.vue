@@ -41,7 +41,7 @@ async function save() {
   const payload = {
     name: form.name,
     description: form.description,
-    language: form.language, // new project field (backend-dependent)
+    language: form.language, // new project field (backend-dependent, DESIGN-SPEC-DL §11.4)
     llm_tonality_id: form.llm_tonality_id,
     llm_temperature_id: form.llm_temperature_id,
   };
