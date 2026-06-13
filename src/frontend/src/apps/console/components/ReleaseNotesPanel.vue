@@ -6,7 +6,6 @@ import StatusDot from './StatusDot.vue';
 defineProps({
   items: { type: Array, default: () => [] }, // [{ id, version, body, publishedAt }]
 });
-const dotVariants = ['green', 'gray', 'amber'];
 </script>
 
 <template>
@@ -16,9 +15,9 @@ const dotVariants = ['green', 'gray', 'amber'];
     <p v-if="!items.length" class="text-meta text-[13px]">No release notes yet.</p>
 
     <ul v-else class="space-y-6">
-      <li v-for="(note, i) in items" :key="note.id" class="border-b border-field-border pb-6 last:border-0">
+      <li v-for="note in items" :key="note.id" class="border-b border-field-border pb-6 last:border-0">
         <div class="flex gap-3">
-          <StatusDot :variant="dotVariants[i % dotVariants.length]" class="mt-0.5" />
+          <StatusDot variant="green" class="mt-0.5" />
           <p class="text-[14px] text-black line-clamp-3">{{ note.body }}</p>
         </div>
         <div class="flex items-center justify-between mt-2 pl-7">
