@@ -1,11 +1,12 @@
 <script setup>
 import { relative } from '../../../shared/date.js';
 import Pill from './Pill.vue';
+import StatusDot from './StatusDot.vue';
 
 defineProps({
   items: { type: Array, default: () => [] }, // [{ id, version, body, publishedAt }]
 });
-const dotColors = ['bg-green-500', 'bg-gray-300', 'bg-accent'];
+const dotVariants = ['green', 'gray', 'amber'];
 </script>
 
 <template>
@@ -17,10 +18,10 @@ const dotColors = ['bg-green-500', 'bg-gray-300', 'bg-accent'];
     <ul v-else class="space-y-6">
       <li v-for="(note, i) in items" :key="note.id" class="border-b border-field-border pb-6 last:border-0">
         <div class="flex gap-3">
-          <span class="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5" :class="dotColors[i % dotColors.length]" />
+          <StatusDot :variant="dotVariants[i % dotVariants.length]" class="mt-0.5" />
           <p class="text-[14px] text-black line-clamp-3">{{ note.body }}</p>
         </div>
-        <div class="flex items-center justify-between mt-2 pl-5">
+        <div class="flex items-center justify-between mt-2 pl-7">
           <span class="text-meta text-[13px]">{{ relative(note.publishedAt) }}</span>
           <Pill v-if="note.version" :label="'v' + note.version" variant="version" />
         </div>

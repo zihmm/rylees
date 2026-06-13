@@ -5,6 +5,7 @@ import { useProjectsStore } from '../stores/projects.js';
 import AppLogo from './AppLogo.vue';
 import AppIcon from '../../../shared/icons/AppIcon.vue';
 import UserMenu from './UserMenu.vue';
+import StatusDot from './StatusDot.vue';
 
 const route = useRoute();
 const projectsStore = useProjectsStore();
@@ -21,7 +22,7 @@ function isActive(match) {
 
 // Show the most recently updated projects (the endpoint returns all, newest first).
 const currentProjects = computed(() => (projectsStore.allProjects || []).slice(0, 8));
-const dotColors = ['bg-green-500', 'bg-rose-500', 'bg-gray-300'];
+const dotVariants = ['green', 'rose', 'gray'];
 
 onMounted(async () => {
   // Best-effort: the global /projects endpoint may not exist yet.
@@ -61,7 +62,7 @@ onMounted(async () => {
         <p class="px-2 text-[14px] font-medium text-[#777] mb-2">Current Projects</p>
         <ul>
           <li v-for="(p, i) in currentProjects" :key="p.id || i" class="flex items-center gap-3 px-2 py-2 text-[14px] text-ink">
-            <span class="w-2.5 h-2.5 rounded-full shrink-0" :class="dotColors[i % dotColors.length]" />
+            <StatusDot :variant="dotVariants[i % dotVariants.length]" />
             <span class="truncate">{{ p.name }}</span>
           </li>
         </ul>

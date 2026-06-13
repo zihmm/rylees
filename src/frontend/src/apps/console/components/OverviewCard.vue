@@ -2,6 +2,7 @@
 import { RouterLink } from 'vue-router';
 import AppIcon from '../../../shared/icons/AppIcon.vue';
 import Pill from './Pill.vue';
+import StatusDot from './StatusDot.vue';
 
 defineProps({
   to: { type: [Object, String], default: null }, // omit for a non-clickable card
@@ -24,13 +25,7 @@ defineProps({
     class="group flex items-start gap-4 py-6 border-b border-field-border px-2 -mx-2 rounded"
     :class="to ? 'hover:bg-panel/60' : ''"
   >
-    <!-- Active-state dot: solid inner circle with a lighter outer halo ring. -->
-    <span
-      class="mt-1 flex items-center justify-center w-[15px] h-[15px] rounded-full shrink-0"
-      :class="active ? 'bg-green-500/25' : 'bg-gray-300/40'"
-    >
-      <span class="w-2 h-2 rounded-full" :class="active ? 'bg-green-500' : 'bg-gray-400'" />
-    </span>
+    <StatusDot :variant="active ? 'green' : 'gray'" class="mt-1" />
 
     <div class="flex-1 min-w-0">
       <h3 class="text-[15px] font-semibold text-black">{{ title }}</h3>
