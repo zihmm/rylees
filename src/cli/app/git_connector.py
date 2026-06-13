@@ -12,6 +12,13 @@ class GitConnector:
         except git.InvalidGitRepositoryError:
             raise GitConnectorError(f"Not a valid git repository: {repo_path}")
 
+    def current_branch(self) -> str:
+        """Return the active branch name, or the short HEAD sha when detached."""
+        try:
+            return self._repo.active_branch.name
+        except TypeError:
+            return self._repo.head.commit.hexsha[:7]
+
     def get_diff(
         self,
         start_ref: str,
