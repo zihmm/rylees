@@ -3,6 +3,9 @@ import { ref } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
 import AuthCard from '../components/AuthCard.vue';
+import AuthField from '../components/AuthField.vue';
+import AppButton from '../components/AppButton.vue';
+import Notification from '../components/Notification.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -10,21 +13,28 @@ const router = useRouter();
 
 const username = ref('');
 const password = ref('');
-const error = ref(null);
+const notification = ref(null);
 const loading = ref(false);
 
 async function submit() {
   loading.value = true;
-  error.value = null;
+  notification.value = null;
   try {
     await auth.login(username.value, password.value);
     router.push(route.query.redirect || '/dashboard');
   } catch (e) {
-    const status = e.response?.status;
-    if (status === 403) {
-      error.value = 'Account not yet activated. Please check your email.';
+    if (e.response?.status === 403) {
+      notification.value = {
+        type: 'warning',
+        title: 'Account not activated',
+        message: 'Please activate your account using the link we emailed you.',
+      };
     } else {
-      error.value = 'Invalid email or password.';
+      notification.value = {
+        type: 'error',
+        title: 'Login failed',
+        message: 'The email or password you entered is incorrect.',
+      };
     }
   } finally {
     loading.value = false;
@@ -34,39 +44,32 @@ async function submit() {
 
 <template>
   <AuthCard>
-    <form class="space-y-1" @submit.prevent="submit">
-      <input
+    <Notification v-if="notification" v-bind="notification" class="mb-8" />
+
+    <form @submit.prevent="submit">
+      <AuthField
         v-model="username"
+        label="E-Mail"
         type="email"
-        placeholder="E-Mail"
         autocomplete="username"
-        class="w-full py-3 border-b border-field-border text-[15px] outline-none focus:border-accent"
       />
-      <input
+      <AuthField
         v-model="password"
+        label="Password"
         type="password"
-        placeholder="Password"
         autocomplete="current-password"
-        class="w-full py-3 border-b border-field-border text-[15px] outline-none focus:border-accent"
+        last
       />
 
-      <p v-if="error" class="text-danger text-[13px] pt-3">{{ error }}</p>
-
-      <div class="pt-8 flex justify-center">
-        <button
-          type="submit"
-          :disabled="loading"
-          class="bg-accent text-white font-medium rounded-field px-10 h-12 disabled:opacity-60"
-        >
-          {{ loading ? '…' : 'Login' }}
-        </button>
+      <div class="pt-16 flex justify-center">
+        <AppButton type="submit" size="lg" :loading="loading">Login</AppButton>
       </div>
     </form>
 
     <p class="text-center text-[13px] text-meta mt-6">
       <RouterLink to="/register" class="underline hover:text-ink">Create account</RouterLink>
       <span> or </span>
-      <span class="underline cursor-default" title="Not available">forgot password?</span>
+      <RouterLink to="/forgot-password" class="underline hover:text-ink">forgot password?</RouterLink>
     </p>
   </AuthCard>
 </template>

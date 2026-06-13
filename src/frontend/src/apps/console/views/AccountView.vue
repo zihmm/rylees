@@ -11,6 +11,7 @@ const auth = useAuthStore();
 
 const errors = ref({});
 const successMessage = ref(null);
+const saving = ref(false);
 const form = reactive({
   firstname: '', lastname: '',
   org_name: '', org_street: '', org_postcode: '', org_city: '', org_website: '', org_email: '',
@@ -61,6 +62,7 @@ async function save() {
     payload.new_password = form.new_password;
   }
 
+  saving.value = true;
   try {
     const res = await updateMe(payload);
     auth.updateUser(res.data);
@@ -74,6 +76,8 @@ async function save() {
         errors.value.current_password = 'Current password is incorrect.';
       }
     }
+  } finally {
+    saving.value = false;
   }
 }
 </script>
@@ -104,7 +108,7 @@ async function save() {
       <TextField v-model="form.confirm_new_password" label="Confirm new password" type="password" :error="err('confirm_new_password')" />
 
       <div class="flex justify-end pt-6">
-        <AppButton type="submit" icon="check">Save</AppButton>
+        <AppButton type="submit" icon="check" :loading="saving">Save</AppButton>
       </div>
     </form>
   </ConsoleLayout>

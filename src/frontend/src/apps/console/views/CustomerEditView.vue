@@ -16,6 +16,7 @@ const customerId = route.params.id;
 
 const industries = ref([]);
 const errors = ref({});
+const saving = ref(false);
 const form = reactive({
   name: '', street: '', postcode: '', city: '', website: '', email: '',
   industry_id: '', description: '',
@@ -49,11 +50,14 @@ async function save() {
     industry_id: form.industry_id || null,
     description: form.description,
   };
+  saving.value = true;
   try {
     await store.patchCustomer(customerId, payload);
     router.push(`/customers/${customerId}`);
   } catch (e) {
     if (e.response?.status === 422) errors.value = e.response.data.errors || {};
+  } finally {
+    saving.value = false;
   }
 }
 </script>
@@ -72,7 +76,7 @@ async function save() {
 
       <div class="flex justify-end gap-3 pt-6">
         <AppButton variant="secondary" @click="router.push(`/customers/${customerId}`)">Cancel</AppButton>
-        <AppButton type="submit" icon="check">Save</AppButton>
+        <AppButton type="submit" icon="check" :loading="saving">Save</AppButton>
       </div>
     </form>
   </ConsoleLayout>

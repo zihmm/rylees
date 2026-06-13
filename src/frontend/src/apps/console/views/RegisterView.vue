@@ -3,6 +3,9 @@ import { reactive, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { register } from '../../../shared/api.js';
 import AuthCard from '../components/AuthCard.vue';
+import AuthField from '../components/AuthField.vue';
+import AppButton from '../components/AppButton.vue';
+import Notification from '../components/Notification.vue';
 import AppIcon from '../../../shared/icons/AppIcon.vue';
 
 const form = reactive({
@@ -20,17 +23,30 @@ const form = reactive({
 });
 
 const fieldErrors = ref({});
-const successMessage = ref(null);
+const notification = ref(null);
+const registered = ref(false);
 const loading = ref(false);
 
-function fieldClass(key) {
-  return fieldErrors.value[key]
-    ? 'border-danger'
-    : 'border-field-border focus:border-accent';
-}
+const accountFields = [
+  { k: 'firstname', label: 'Firstname', err: ['profile.firstname'] },
+  { k: 'lastname', label: 'Lastname', err: ['profile.lastname'] },
+  { k: 'username', label: 'E-Mail', type: 'email', err: ['username'] },
+  { k: 'password', label: 'Password', type: 'password', err: ['password'] },
+  { k: 'confirm_password', label: 'Confirm password', type: 'password', err: ['confirm_password'] },
+];
+
+const organisationFields = [
+  { k: 'org_name', label: 'Name', err: ['organisation.name'] },
+  { k: 'org_street', label: 'Street', err: ['organisation.street'] },
+  { k: 'org_city', label: 'City', err: ['organisation.city'] },
+  { k: 'org_postcode', label: 'Postcode', err: ['organisation.postcode'] },
+  { k: 'org_website', label: 'Website', err: ['organisation.website'] },
+  { k: 'org_email', label: 'Email', type: 'email', err: ['organisation.email'] },
+];
 
 async function submit() {
   fieldErrors.value = {};
+  notification.value = null;
   // Client-side: password confirmation.
   if (form.password !== form.confirm_password) {
     fieldErrors.value.confirm_password = 'Passwords do not match';
@@ -52,10 +68,26 @@ async function submit() {
   };
   try {
     await register(payload);
-    successMessage.value = 'Account created. Please check your email to activate your account.';
+    registered.value = true;
+    notification.value = {
+      type: 'success',
+      title: 'Success',
+      message: 'Your account was created. Please activate it with the activation link.',
+    };
   } catch (e) {
     if (e.response?.status === 422) {
       fieldErrors.value = e.response.data.errors || {};
+      notification.value = {
+        type: 'warning',
+        title: 'Please check your input',
+        message: 'Some fields need your attention before we can create your account.',
+      };
+    } else {
+      notification.value = {
+        type: 'error',
+        title: 'Registration failed',
+        message: 'Something went wrong creating your account. Please try again.',
+      };
     }
   } finally {
     loading.value = false;
@@ -81,57 +113,39 @@ function apiError(...keys) {
       </RouterLink>
     </template>
 
-    <div v-if="successMessage" class="text-center py-6">
-      <p class="text-[15px] text-ink">{{ successMessage }}</p>
-      <RouterLink to="/login" class="inline-block mt-6 text-accent underline">Go to login</RouterLink>
+    <Notification v-if="notification" v-bind="notification" class="mb-8" />
+
+    <div v-if="registered" class="text-center">
+      <RouterLink to="/login" class="inline-block text-accent underline">Go to login</RouterLink>
     </div>
 
-    <form v-else class="space-y-1" @submit.prevent="submit">
+    <form v-else @submit.prevent="submit">
       <h2 class="text-[17px] font-semibold text-black mb-6">Register Account</h2>
 
-      <p class="text-[13px] font-medium text-meta tracking-wide mt-2">ACCOUNT</p>
-      <template v-for="f in [
-        { k: 'firstname', ph: 'Firstname', err: ['profile.firstname'] },
-        { k: 'lastname', ph: 'Lastname', err: ['profile.lastname'] },
-        { k: 'username', ph: 'E-Mail', type: 'email', err: ['username'] },
-        { k: 'password', ph: 'Password', type: 'password', err: ['password'] },
-        { k: 'confirm_password', ph: 'Confirm password', type: 'password', err: ['confirm_password'] },
-      ]" :key="f.k">
-        <input
-          v-model="form[f.k]"
-          :type="f.type || 'text'"
-          :placeholder="f.ph"
-          class="w-full py-3 border-b text-[15px] outline-none"
-          :class="(apiError(...(f.err || [])) || fieldErrors[f.k]) ? 'border-danger' : 'border-field-border focus:border-accent'"
-        />
-        <p v-if="apiError(...(f.err || [])) || fieldErrors[f.k]" class="text-danger text-[11px] pb-1">
-          {{ fieldErrors[f.k] || apiError(...(f.err || [])) }}
-        </p>
-      </template>
+      <p class="text-[13px] font-medium text-meta tracking-wide mt-2 mb-1">ACCOUNT</p>
+      <AuthField
+        v-for="(f, i) in accountFields"
+        :key="f.k"
+        v-model="form[f.k]"
+        :label="f.label"
+        :type="f.type || 'text'"
+        :error="fieldErrors[f.k] || apiError(...(f.err || []))"
+        :last="i === accountFields.length - 1"
+      />
 
-      <p class="text-[13px] font-medium text-meta tracking-wide pt-4">ORGANISATION</p>
-      <template v-for="f in [
-        { k: 'org_name', ph: 'Name', err: ['organisation.name'] },
-        { k: 'org_street', ph: 'Street', err: ['organisation.street'] },
-        { k: 'org_city', ph: 'City', err: ['organisation.city'] },
-        { k: 'org_postcode', ph: 'Postcode', err: ['organisation.postcode'] },
-        { k: 'org_website', ph: 'Website', err: ['organisation.website'] },
-        { k: 'org_email', ph: 'Email', type: 'email', err: ['organisation.email'] },
-      ]" :key="f.k">
-        <input
-          v-model="form[f.k]"
-          :type="f.type || 'text'"
-          :placeholder="f.ph"
-          class="w-full py-3 border-b text-[15px] outline-none"
-          :class="apiError(...(f.err || [])) ? 'border-danger' : 'border-field-border focus:border-accent'"
-        />
-        <p v-if="apiError(...(f.err || []))" class="text-danger text-[11px] pb-1">{{ apiError(...(f.err || [])) }}</p>
-      </template>
+      <p class="text-[13px] font-medium text-meta tracking-wide pt-6 mb-1">ORGANISATION</p>
+      <AuthField
+        v-for="(f, i) in organisationFields"
+        :key="f.k"
+        v-model="form[f.k]"
+        :label="f.label"
+        :type="f.type || 'text'"
+        :error="apiError(...(f.err || []))"
+        :last="i === organisationFields.length - 1"
+      />
 
       <div class="pt-8 flex justify-center">
-        <button type="submit" :disabled="loading" class="bg-accent text-white font-medium rounded-field px-10 h-12 disabled:opacity-60">
-          {{ loading ? '…' : 'Register' }}
-        </button>
+        <AppButton type="submit" size="lg" :loading="loading">Register</AppButton>
       </div>
     </form>
   </AuthCard>

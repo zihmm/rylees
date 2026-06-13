@@ -25,6 +25,7 @@ const LANGUAGES = [
 const tonalities = ref([]);
 const temperatures = ref([]);
 const errors = ref({});
+const saving = ref(false);
 const token = ref('');
 const releaseNotes = ref([]);
 const form = reactive({ name: '', description: '', language: 'en', llm_tonality_id: '', llm_temperature_id: '' });
@@ -73,11 +74,14 @@ async function save() {
     llm_tonality_id: form.llm_tonality_id,
     llm_temperature_id: form.llm_temperature_id,
   };
+  saving.value = true;
   try {
     await store.patchProject(customerId, id, payload);
     router.push(`/customers/${customerId}/projects/${id}`);
   } catch (e) {
     if (e.response?.status === 422) errors.value = e.response.data.errors || {};
+  } finally {
+    saving.value = false;
   }
 }
 </script>
@@ -94,7 +98,7 @@ async function save() {
 
       <div class="flex justify-end gap-3 pt-6">
         <AppButton variant="secondary" @click="router.push(`/customers/${customerId}/projects/${id}`)">Cancel</AppButton>
-        <AppButton type="submit" icon="check">Save</AppButton>
+        <AppButton type="submit" icon="check" :loading="saving">Save</AppButton>
       </div>
     </form>
 

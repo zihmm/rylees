@@ -424,10 +424,18 @@ Schema::create('users', function (Blueprint $table) {
     $table->boolean('is_active')->default(false)->notNull();
     $table->string('activation_token', 255)->nullable();
     $table->timestamp('activated_at')->nullable();
+    $table->string('password_reset_token', 255)->nullable();
+    $table->timestamp('password_reset_expires_at')->nullable();
     $table->timestamps();
     $table->softDeletes();
 });
 ```
+
+`password_reset_token` / `password_reset_expires_at` back the forgot-password flow
+(see §7.1). The token is single-use and time-limited; both columns are cleared once
+a reset succeeds. They are added by a follow-up migration
+(`add_password_reset_to_users_table`) and may be folded into this `create` block on a
+fresh schema.
 
 ### Migration 6: `user_profiles`
 
@@ -648,6 +656,8 @@ Modules MUST communicate only through public service class interfaces. Direct cr
 
 ```php
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 Route::middleware('auth:sanctum')->post('/auth/logout', [AuthController::class, 'logout']);
 ```
 
@@ -655,7 +665,9 @@ Route::middleware('auth:sanctum')->post('/auth/logout', [AuthController::class, 
 
 ```php
 public function login(LoginRequest $request): JsonResponse
-public function logout(Request $request): JsonResponse  // 204
+public function logout(Request $request): JsonResponse                    // 204
+public function forgotPassword(ForgotPasswordRequest $request): JsonResponse  // 200
+public function resetPassword(ResetPasswordRequest $request): JsonResponse    // 200
 ```
 
 **`LoginRequest` validation rules**
@@ -663,6 +675,19 @@ public function logout(Request $request): JsonResponse  // 204
 ```php
 'username' => 'required|email',
 'password' => 'required|string',
+```
+
+**`ForgotPasswordRequest` validation rules**
+
+```php
+'username' => 'required|email',
+```
+
+**`ResetPasswordRequest` validation rules**
+
+```php
+'token'    => 'required|string',
+'password' => 'required|string|min:12',
 ```
 
 **`AuthService`**
@@ -677,6 +702,17 @@ public function login(array $credentials): array
 
 public function logout(User $user): void
 // - $user->currentAccessToken()->delete()
+
+public function forgotPassword(string $username): void
+// - Find user by username; if not found → return silently (no email enumeration)
+// - Set password_reset_token = Str::random(64), password_reset_expires_at = now()->addMinutes(60)
+// - Dispatch PasswordResetMail to the username address
+
+public function resetPassword(string $token, string $password): void
+// - Find user where password_reset_token = $token AND password_reset_expires_at > now()
+// - If not found (unknown or expired): throw ModelNotFoundException → 404 not_found
+// - Set password = Hash::make($password), password_reset_token = null, password_reset_expires_at = null
+// - Revoke all of the user's existing tokens (user->tokens()->delete())
 ```
 
 **Login response shape:**
@@ -722,6 +758,68 @@ Email blade template must include:
 - Greeting: `"Hello {firstname}!"`
 - Explanation: account activation is required before login
 - A prominent button linking to the activation URL
+- Plain-text fallback
+
+**Forgot / reset password flow**
+
+Backs the "Forgot password?" link on the console login page. Two unauthenticated
+endpoints; the token lives in the `users.password_reset_token` /
+`password_reset_expires_at` columns and is single-use.
+
+`POST /auth/forgot-password` — request a reset link.
+
+```json
+// request
+{ "username": "jane@example.com" }
+
+// response 200 — identical whether or not the address exists (no enumeration)
+{ "message": "If an account exists for this email, a password reset link has been sent." }
+```
+
+- Validation failure (missing / non-email `username`) → `422 validation_error`.
+
+`POST /auth/reset-password` — set a new password using the emailed token.
+
+```json
+// request
+{ "token": "<64-char-reset-token>", "password": "new-secure-password" }
+
+// response 200
+{ "message": "Your password has been reset." }
+```
+
+- Unknown or expired token → `404 not_found`.
+- `password` shorter than 12 chars / missing `token` → `422 validation_error`.
+- On success the token is cleared and all of the user's existing access tokens are
+  revoked.
+
+**`PasswordResetMail`**
+
+File: `Auth/Mail/PasswordResetMail.php`
+
+```php
+class PasswordResetMail extends Mailable
+{
+    public function __construct(public User $user) {}
+
+    public function build(): self
+    {
+        return $this->subject('Reset your Rylees password')
+            ->markdown('emails.password-reset');
+    }
+}
+```
+
+Reset link format:
+```
+https://console.rylees.ai/reset-password?token={password_reset_token}
+```
+
+Email blade template must include:
+- Greeting: `"Hello {firstname}!"`
+- Explanation that a password reset was requested and the link expires in 60 minutes
+- A note to ignore the email if the reset was not requested
+- A prominent button linking to the reset URL
 - Plain-text fallback
 
 ---
@@ -1621,12 +1719,20 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ### Test classes and what each must cover
 
-**`AuthTest`** (tests for AC-API-04, AC-API-05)
+**`AuthTest`** (tests for AC-API-04, AC-API-05, AC-API-05a)
 - `test_login_with_valid_credentials_returns_token`
 - `test_login_with_inactive_user_returns_403_inactive_user`
 - `test_login_with_wrong_password_returns_401_unauthenticated`
 - `test_login_with_unknown_username_returns_401_unauthenticated` (same error, no user-not-found hint)
 - `test_logout_revokes_token`
+- `test_forgot_password_with_known_email_sends_reset_mail_and_sets_token`
+- `test_forgot_password_with_unknown_email_returns_200_and_sends_nothing`
+- `test_forgot_password_requires_valid_email`
+- `test_reset_password_with_valid_token_changes_password_and_clears_token`
+- `test_reset_password_revokes_existing_tokens`
+- `test_reset_password_with_invalid_token_returns_404`
+- `test_reset_password_with_expired_token_returns_404`
+- `test_reset_password_enforces_minimum_length`
 
 **`AccountTest`** (tests for AC-API-04)
 - `test_register_creates_user_profile_and_organisation`
@@ -1716,6 +1822,14 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 - `POST /auth/login` with wrong credentials returns `401 unauthenticated`.
 - `POST /auth/logout` revokes the current token.
 - CLI requests via `Authorization: Bearer <api_key>` resolve the owning user correctly.
+
+### AC-API-05a — Forgot / reset password
+
+- `POST /auth/forgot-password` with a known email returns `200`, stores a `password_reset_token` with a future `password_reset_expires_at`, and sends `PasswordResetMail`.
+- `POST /auth/forgot-password` with an unknown email returns the same `200` message and sends no email (no account enumeration).
+- `POST /auth/reset-password` with a valid, unexpired token returns `200`, updates the password, clears the reset token, and revokes the user's existing tokens.
+- `POST /auth/reset-password` with an unknown or expired token returns `404 not_found`.
+- `POST /auth/reset-password` with a password shorter than 12 characters returns `422 validation_error`.
 
 ### AC-API-06 — Authorization scoping
 

@@ -16,6 +16,7 @@ const customerId = route.params.id;
 
 const adding = ref(false);
 const editingId = ref(null);
+const submitting = ref(false);
 const blank = () => ({ firstname: '', lastname: '', email: '' });
 const draft = reactive(blank());
 
@@ -37,12 +38,22 @@ async function reload() {
   editingId.value = null;
 }
 async function submitAdd() {
-  await createContact(customerId, { ...draft });
-  await reload();
+  submitting.value = true;
+  try {
+    await createContact(customerId, { ...draft });
+    await reload();
+  } finally {
+    submitting.value = false;
+  }
 }
 async function submitEdit() {
-  await updateContact(customerId, editingId.value, { ...draft });
-  await reload();
+  submitting.value = true;
+  try {
+    await updateContact(customerId, editingId.value, { ...draft });
+    await reload();
+  } finally {
+    submitting.value = false;
+  }
 }
 async function removeContact(id) {
   if (!confirm('Delete this contact?')) return;
@@ -87,7 +98,7 @@ async function removeContact(id) {
             <input v-model="draft.firstname" placeholder="Firstname" class="h-9 border border-field-border rounded-field px-2 text-[14px]" />
             <input v-model="draft.lastname" placeholder="Lastname" class="h-9 border border-field-border rounded-field px-2 text-[14px]" />
             <input v-model="draft.email" placeholder="Email" class="h-9 border border-field-border rounded-field px-2 text-[14px]" />
-            <AppButton type="submit" icon="check">Save</AppButton>
+            <AppButton type="submit" icon="check" :loading="submitting">Save</AppButton>
             <AppButton variant="secondary" @click="editingId = null">Cancel</AppButton>
           </form>
           <div v-else class="flex items-center justify-between">
@@ -108,7 +119,7 @@ async function removeContact(id) {
             <input v-model="draft.firstname" placeholder="Firstname" class="h-9 border border-field-border rounded-field px-2 text-[14px]" />
             <input v-model="draft.lastname" placeholder="Lastname" class="h-9 border border-field-border rounded-field px-2 text-[14px]" />
             <input v-model="draft.email" placeholder="Email" class="h-9 border border-field-border rounded-field px-2 text-[14px]" />
-            <AppButton type="submit" icon="check">Save</AppButton>
+            <AppButton type="submit" icon="check" :loading="submitting">Save</AppButton>
             <AppButton variant="secondary" @click="adding = false">Cancel</AppButton>
           </form>
         </li>

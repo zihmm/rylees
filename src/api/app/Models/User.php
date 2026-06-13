@@ -27,11 +27,14 @@ final class User extends Authenticatable
         'is_active',
         'activation_token',
         'activated_at',
+        'password_reset_token',
+        'password_reset_expires_at',
     ];
 
     protected $hidden = [
         'password',
         'activation_token',
+        'password_reset_token',
     ];
 
     public function profile(): HasOne
@@ -55,6 +58,7 @@ final class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'activated_at' => 'datetime',
+            'password_reset_expires_at' => 'datetime',
         ];
     }
 }

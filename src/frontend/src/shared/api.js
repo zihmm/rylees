@@ -41,6 +41,12 @@ export const register = (payload) => apiClient.post('/users/register', payload);
 export const activate = (token) =>
   apiClient.get('/users/activate', { params: { token } });
 
+export const forgotPassword = (username) =>
+  apiClient.post('/auth/forgot-password', { username });
+
+export const resetPassword = (token, password) =>
+  apiClient.post('/auth/reset-password', { token, password });
+
 export const getMe = () => apiClient.get('/users/me');
 
 export const updateMe = (payload) => apiClient.patch('/users/me', payload);
