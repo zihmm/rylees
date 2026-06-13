@@ -23,7 +23,8 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  // Dev serves this app under /console/; production serves it at the domain root.
+  history: createWebHistory(import.meta.env.DEV ? '/console/' : '/'),
   routes,
 });
 

@@ -14,6 +14,7 @@ const routes = [
 ];
 
 export default createRouter({
-  history: createWebHistory(),
+  // Dev serves this app under /history/; production serves it at the domain root.
+  history: createWebHistory(import.meta.env.DEV ? '/history/' : '/'),
   routes,
 });
