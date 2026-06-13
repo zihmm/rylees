@@ -1,13 +1,13 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
   build: {
     rollupOptions: {
       input: {
-        console: 'console.html',
-        history: 'history.html',
+        console: "console/index.html",
+        history: "history/index.html",
       },
     },
   },
