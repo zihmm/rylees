@@ -102,10 +102,10 @@ async function save() {
       <TextField v-model="form.current_password" label="Current password" type="password" :error="err('current_password')" />
       <TextField v-model="form.new_password" label="New password" type="password" :error="err('new_password')" />
       <TextField v-model="form.confirm_new_password" label="Confirm new password" type="password" :error="err('confirm_new_password')" />
-
-      <div class="flex justify-end pt-6">
-        <AppButton type="submit" icon="check" :loading="saving">Save</AppButton>
-      </div>
     </form>
+
+    <template #footer-actions>
+      <AppButton icon="check" :loading="saving" @click="save">Save</AppButton>
+    </template>
   </ConsoleLayout>
 </template>

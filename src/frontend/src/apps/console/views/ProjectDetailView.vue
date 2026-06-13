@@ -1,15 +1,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useProjectsStore } from '../stores/projects.js';
 import { getReleaseHistory } from '../../../shared/api.js';
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import TokenField from '../components/TokenField.vue';
-import AppButton from '../components/AppButton.vue';
 import ReleaseNotesPanel from '../components/ReleaseNotesPanel.vue';
 
 const route = useRoute();
-const router = useRouter();
 const store = useProjectsStore();
 const { customerId, id } = route.params;
 
@@ -36,10 +34,6 @@ onMounted(async () => {
     :parent="{ label: 'Projects', to: '/projects' }"
     :current="project.name"
   >
-    <div class="flex justify-end mb-2">
-      <AppButton variant="secondary" @click="router.push(`/customers/${customerId}/projects/${id}/edit`)">Edit project</AppButton>
-    </div>
-
     <dl>
       <div class="flex flex-col sm:flex-row gap-2 sm:gap-8 py-6 border-b border-field-border">
         <dt class="sm:w-48 shrink-0 text-[13px] text-field-label">Name</dt>

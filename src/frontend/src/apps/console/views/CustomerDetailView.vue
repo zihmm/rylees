@@ -135,7 +135,7 @@ async function removeContact(id) {
       </div>
       <ul class="border border-field-border rounded-card divide-y divide-field-border">
         <li v-for="p in customer.projects" :key="p.id">
-          <RouterLink :to="`/customers/${customerId}/projects/${p.id}`" class="flex items-center justify-between p-4 hover:bg-panel">
+          <RouterLink :to="`/customers/${customerId}/projects/${p.id}/edit`" class="flex items-center justify-between p-4 hover:bg-panel">
             <span class="text-[14px] font-medium">{{ p.name }}</span>
             <span class="text-meta text-[13px]">{{ p.key }}</span>
           </RouterLink>

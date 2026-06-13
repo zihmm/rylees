@@ -34,7 +34,7 @@ const projects = computed(() => store.allProjects || []);
       <OverviewCard
         v-for="p in projects"
         :key="p.id"
-        :to="`/customers/${p.customer_id}/projects/${p.id}`"
+        :to="`/customers/${p.customer_id}/projects/${p.id}/edit`"
         :title="p.name"
         :subtitle="p.customer_name || ''"
         :subtitle-to="`/customers/${p.customer_id}/edit`"

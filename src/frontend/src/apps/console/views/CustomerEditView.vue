@@ -73,11 +73,11 @@ async function save() {
       <TextField v-model="form.email" label="Email" type="email" :error="err('organisation.email')" />
       <SelectField v-model="form.industry_id" label="Industry" :options="industries" placeholder="—" :error="err('industry_id')" />
       <TextArea v-model="form.description" label="Description" :error="err('description')" />
-
-      <div class="flex justify-end gap-3 pt-6">
-        <AppButton variant="secondary" @click="router.push(`/customers/${customerId}`)">Cancel</AppButton>
-        <AppButton type="submit" icon="check" :loading="saving">Save</AppButton>
-      </div>
     </form>
+
+    <template #footer-actions>
+      <AppButton variant="secondary" @click="router.push(`/customers/${customerId}`)">Cancel</AppButton>
+      <AppButton icon="check" :loading="saving" @click="save">Save</AppButton>
+    </template>
   </ConsoleLayout>
 </template>

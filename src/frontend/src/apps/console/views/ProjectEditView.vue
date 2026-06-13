@@ -27,6 +27,7 @@ const temperatures = ref([]);
 const errors = ref({});
 const saving = ref(false);
 const token = ref('');
+const projectName = ref('');
 const releaseNotes = ref([]);
 const form = reactive({ name: '', description: '', language: 'en', llm_tonality_id: '', llm_temperature_id: '' });
 
@@ -43,6 +44,7 @@ onMounted(async () => {
     (t) => t.rawName === p.llm?.temperature || String(t.rawValue) === String(p.llm?.temperature)
   );
   token.value = p.token || '';
+  projectName.value = p.name || '';
   Object.assign(form, {
     name: p.name || '',
     description: p.description || '',
@@ -77,7 +79,7 @@ async function save() {
   saving.value = true;
   try {
     await store.patchProject(customerId, id, payload);
-    router.push(`/customers/${customerId}/projects/${id}`);
+    router.push('/projects');
   } catch (e) {
     if (e.response?.status === 422) errors.value = e.response.data.errors || {};
   } finally {
@@ -87,7 +89,7 @@ async function save() {
 </script>
 
 <template>
-  <ConsoleLayout :parent="{ label: 'Projects', to: '/projects' }" current="Edit Project">
+  <ConsoleLayout :parent="{ label: 'Projects', to: '/projects' }" :current="projectName">
     <form @submit.prevent="save">
       <TextField v-model="form.name" label="Name" required :error="err('name')" />
       <TokenField :token="token" />
@@ -95,15 +97,15 @@ async function save() {
       <SelectField v-model="form.llm_tonality_id" label="LLM tonality" :options="tonalities" placeholder="—" required :error="err('llm_tonality_id')" />
       <SelectField v-model="form.llm_temperature_id" label="LLM temperature" :options="temperatures" placeholder="—" required :error="err('llm_temperature_id')" />
       <TextArea v-model="form.description" label="Description" :error="err('description')" />
-
-      <div class="flex justify-end gap-3 pt-6">
-        <AppButton variant="secondary" @click="router.push(`/customers/${customerId}/projects/${id}`)">Cancel</AppButton>
-        <AppButton type="submit" icon="check" :loading="saving">Save</AppButton>
-      </div>
     </form>
 
     <template #sidebar>
       <ReleaseNotesPanel :items="releaseNotes" />
+    </template>
+
+    <template #footer-actions>
+      <AppButton variant="secondary" @click="router.push('/projects')">Cancel</AppButton>
+      <AppButton icon="check" :loading="saving" @click="save">Save</AppButton>
     </template>
   </ConsoleLayout>
 </template>
