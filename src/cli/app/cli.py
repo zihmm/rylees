@@ -90,7 +90,7 @@ def _run_generate(
         raise typer.Exit(code=1)
 
     # Step 2 — Fetch project config from API
-    api_client = ApiClient(api_token=config.api_token)
+    api_client = ApiClient(api_token=config.api_token, base_url=config.api_url)
     try:
         project = api_client.get_project(config.project_token)
     except Exception as e:

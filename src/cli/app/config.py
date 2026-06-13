@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 import os
 
+from app.api_client import BASE_URL as DEFAULT_API_URL
+
 class ConfigError(Exception):
     def __init__(self, var_name: str):
         self.var_name = var_name
@@ -12,6 +14,7 @@ class Config:
     api_token: str
     project_token: str
     openai_api_key: str
+    api_url: str
     llm_model: str
     llm_temperature_override: float | None
 
@@ -34,6 +37,7 @@ class Config:
             api_token=required["RYLEES_API_TOKEN"],
             project_token=required["RYLEES_PROJECT_TOKEN"],
             openai_api_key=required["OPENAI_API_KEY"],
+            api_url=os.getenv("RYLEES_API_URL", DEFAULT_API_URL),
             llm_model=os.getenv("RYLEES_LLM_MODEL", "GPT-5.4"),
             llm_temperature_override=float(temp_override) if temp_override else None,
         )
