@@ -22,8 +22,31 @@ function mpaFallback() {
   };
 }
 
+// Emit an Apache SPA fallback (.htaccess) into the console build so a browser
+// refresh on a deep route serves index.html instead of 404ing on the server.
+function consoleHtaccess() {
+  const htaccess = `RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteCond %{HTTP_HOST} ^console\\. [NC]
+RewriteRule ^ /index.html [L]
+`;
+  return {
+    name: "console-htaccess",
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "console/.htaccess",
+        source: htaccess,
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue(), mpaFallback()],
+  plugins: [vue(), mpaFallback(), consoleHtaccess()],
   server: {
     proxy: {
       "/v1": {
