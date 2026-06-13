@@ -63,7 +63,7 @@ async function save() {
 </script>
 
 <template>
-  <ConsoleLayout :parent="{ label: 'Organisations', to: '/customers' }" current="Edit Organisation">
+  <ConsoleLayout :parent="{ label: 'Customers', to: '/customers' }" current="Edit Customer">
     <form @submit.prevent="save">
       <TextField v-model="form.name" label="Name" required :error="err('organisation.name')" />
       <TextField v-model="form.street" label="Street" :error="err('organisation.street')" />

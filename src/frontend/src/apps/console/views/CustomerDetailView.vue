@@ -65,7 +65,7 @@ async function removeContact(id) {
 <template>
   <ConsoleLayout
     v-if="customer"
-    :parent="{ label: 'Organisations', to: '/customers' }"
+    :parent="{ label: 'Customers', to: '/customers' }"
     :current="customer.organisation?.name || ''"
   >
     <!-- Info panel -->

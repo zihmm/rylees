@@ -18,10 +18,9 @@ export const useProjectsStore = defineStore('projects', () => {
     projects.value = response.data.data;
   }
 
-  async function fetchAllProjects(page = 1, perPage = 100) {
-    const response = await getAllProjects(page, perPage);
-    // Tolerate either { data: [...] } or { items: [...] } shapes from the aggregate endpoint.
-    allProjects.value = response.data.data ?? response.data.items ?? [];
+  async function fetchAllProjects() {
+    const response = await getAllProjects();
+    allProjects.value = response.data.data ?? [];
   }
 
   async function fetchProject(customerId, id) {

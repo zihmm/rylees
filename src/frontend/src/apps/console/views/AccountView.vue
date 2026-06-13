@@ -4,7 +4,6 @@ import { useAuthStore } from '../stores/auth.js';
 import { updateMe } from '../../../shared/api.js';
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import TextField from '../components/TextField.vue';
-import TokenField from '../components/TokenField.vue';
 import AppButton from '../components/AppButton.vue';
 
 const auth = useAuthStore();
@@ -83,14 +82,11 @@ async function save() {
 </script>
 
 <template>
-  <ConsoleLayout current="Account">
+  <ConsoleLayout current="Profile">
     <form @submit.prevent="save">
       <p v-if="successMessage" class="mb-4 text-[14px] text-green-600">{{ successMessage }}</p>
 
-      <p class="text-[13px] font-medium text-meta tracking-wide pb-2">API KEY</p>
-      <TokenField label="API Key" :token="auth.user?.api_key || ''" helper="Use this key in your CLI .env (RYLEES_API_TOKEN)" />
-
-      <p class="text-[13px] font-medium text-meta tracking-wide pt-8 pb-2">PROFILE</p>
+      <p class="text-[13px] font-medium text-meta tracking-wide pb-2">PROFILE</p>
       <TextField v-model="form.firstname" label="Firstname" :error="err('profile.firstname')" />
       <TextField v-model="form.lastname" label="Lastname" :error="err('profile.lastname')" />
 

@@ -9,7 +9,7 @@ const routes = [
   { path: '/forgot-password', name: 'forgot-password', component: () => import('../views/ForgotPasswordView.vue'), meta: { requiresAuth: false } },
   { path: '/reset-password', name: 'reset-password', component: () => import('../views/ResetPasswordView.vue'), meta: { requiresAuth: false } },
   { path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { requiresAuth: true } },
-  // "Organisations" in the UI === customers in the API/spec.
+  // "Customers" in the UI === customers in the API/spec.
   { path: '/customers', name: 'customers', component: () => import('../views/CustomersView.vue'), meta: { requiresAuth: true } },
   { path: '/customers/new', name: 'customer-create', component: () => import('../views/CustomerCreateView.vue'), meta: { requiresAuth: true } },
   { path: '/customers/:id', name: 'customer-detail', component: () => import('../views/CustomerDetailView.vue'), meta: { requiresAuth: true } },
@@ -20,6 +20,7 @@ const routes = [
   // Global Projects overview (backed by the new aggregate /projects endpoint).
   { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
   { path: '/account', name: 'account', component: () => import('../views/AccountView.vue'), meta: { requiresAuth: true } },
+  { path: '/api-key', name: 'api-key', component: () => import('../views/ApiKeyView.vue'), meta: { requiresAuth: true } },
   { path: '/error', name: 'server-error', component: () => import('../views/ServerErrorView.vue'), meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../views/NotFoundView.vue'), meta: { requiresAuth: true } },
 ];

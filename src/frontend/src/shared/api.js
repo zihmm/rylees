@@ -88,10 +88,10 @@ export const updateProject = (customerId, id, payload) =>
   apiClient.patch(`/customers/${customerId}/projects/${id}`, payload);
 
 /* ---- Projects (global overview) ----
- * Backed by a new aggregate endpoint (DESIGN-SPEC-DL.md §11, backend-dependent).
- * Stubbed here so the global Projects overview can be wired ahead of the backend. */
-export const getAllProjects = (page = 1, perPage = 20) =>
-  apiClient.get('/projects', { params: { page, per_page: perPage } });
+ * GET /projects — developer-wide project overview (SPEC §7.4). Returns every
+ * non-deleted project across all of the developer's customers, ordered by
+ * updated_at desc, as { data: [...] } (no pagination). */
+export const getAllProjects = () => apiClient.get('/projects');
 
 /* ---- Public Release History ---- */
 export const getReleaseHistory = (customerSlug, projectKey) =>

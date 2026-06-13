@@ -11,18 +11,26 @@ const slots = useSlots();
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-white">
+  <div class="flex h-screen bg-white">
     <SideNav />
 
-    <main class="flex-1 min-w-0 flex flex-col border-l border-field-border">
-      <PageHeader :parent="parent" :current="current" />
-      <div class="flex-1 px-10 py-8 overflow-auto">
-        <slot />
-      </div>
-    </main>
+    <div class="flex-1 min-w-0 flex flex-col border-l border-field-border">
+      <PageHeader :parent="parent" :current="current">
+        <template v-if="slots['header-actions']" #actions>
+          <slot name="header-actions" />
+        </template>
+      </PageHeader>
 
-    <aside v-if="slots.sidebar" class="w-[379px] shrink-0 bg-panel border-l border-field-border p-8 overflow-auto">
-      <slot name="sidebar" />
-    </aside>
+      <!-- Content + right sidebar sit UNDER the full-width header. -->
+      <div class="flex-1 flex min-h-0">
+        <main class="flex-1 min-w-0 px-10 py-8 overflow-auto">
+          <slot />
+        </main>
+
+        <aside v-if="slots.sidebar" class="w-[379px] shrink-0 bg-panel border-l border-field-border p-8 overflow-auto">
+          <slot name="sidebar" />
+        </aside>
+      </div>
+    </div>
   </div>
 </template>

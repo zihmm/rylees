@@ -22,7 +22,7 @@ const totalProjects = computed(() =>
     </h1>
     <div class="grid grid-cols-2 gap-6 max-w-xl">
       <div class="rounded-card border border-field-border p-6">
-        <p class="text-meta text-[13px] mb-1">Organisations</p>
+        <p class="text-meta text-[13px] mb-1">Customers</p>
         <p class="text-3xl font-semibold text-black">{{ pagination.total }}</p>
       </div>
       <div class="rounded-card border border-field-border p-6">
