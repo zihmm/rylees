@@ -4,10 +4,10 @@ Status: v1 — Authoritative agent implementation guide.
 
 This document is the authoritative guide for the **functional** implementation of the Frontend component — data flow, routing, state, API contracts, and behaviour. For the **visual design and interaction**, see the companion design specs:
 
-- **Developer Console** — [`./DESIGN-SPEC-DL.md`](./DESIGN-SPEC-DL.md) (app shell, auth pages, overview/form patterns, error pages, tokens, icons).
+- **Developer Console** — [`./DESIGN-SPEC-DC.md`](./DESIGN-SPEC-DC.md) (app shell, auth pages, overview/form patterns, error pages, tokens, icons).
 - **Release History** — [`./DESIGN-SPEC-RH.md`](./DESIGN-SPEC-RH.md) (layout, timeline/accordion faces, flip transition, tokens, icons).
 
-Where a design spec deviates from the acceptance criteria here, those deviations are listed in that spec's "Deviations" section (`DESIGN-SPEC-DL.md` §11 / `DESIGN-SPEC-RH.md` §8) and take precedence for the visual layer.
+Where a design spec deviates from the acceptance criteria here, those deviations are listed in that spec's "Deviations" section (`DESIGN-SPEC-DC.md` §11 / `DESIGN-SPEC-RH.md` §8) and take precedence for the visual layer.
 
 ---
 
@@ -642,7 +642,7 @@ export default router;
 
 ## 9. Developer Console — View Specifications
 
-> **Visual design:** the app shell (3-column layout), navigation, auth pages, card-list overviews, form/validation patterns, and error pages are specified in [`./DESIGN-SPEC-DL.md`](./DESIGN-SPEC-DL.md). This section covers the functional wiring; consult the design spec for presentation and for the deviations in its §11 (card-list overviews supersede AC-FE-08 tables; "Customers" labelled "Organisations"; added registration password/org fields; plus backend-dependent items: global `/projects` endpoint and a new project `language` field).
+> **Visual design:** the app shell (3-column layout), navigation, auth pages, card-list overviews, form/validation patterns, and error pages are specified in [`./DESIGN-SPEC-DC.md`](./DESIGN-SPEC-DC.md). This section covers the functional wiring; consult the design spec for presentation and for the deviations in its §11 (card-list overviews supersede AC-FE-08 tables; "Customers" labelled "Organisations"; added registration password/org fields; plus backend-dependent items: global `/projects` endpoint and a new project `language` field).
 
 For every view, implement exactly the described data flow and user interactions. Do not add functionality beyond what is described.
 
