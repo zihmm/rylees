@@ -3,10 +3,10 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProjectsStore } from '../stores/projects.js';
 import { getReleaseHistory } from '../../../shared/api.js';
-import { absolute } from '../../../shared/date.js';
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import TokenField from '../components/TokenField.vue';
 import AppButton from '../components/AppButton.vue';
+import ReleaseNotesPanel from '../components/ReleaseNotesPanel.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -28,10 +28,6 @@ onMounted(async () => {
     /* public history may be unavailable */
   }
 });
-
-function summary(body = '') {
-  return body.length > 100 ? `${body.slice(0, 100)}...` : body;
-}
 </script>
 
 <template>
@@ -66,27 +62,8 @@ function summary(body = '') {
       </div>
     </dl>
 
-    <section class="mt-8">
-      <h2 class="text-[15px] font-semibold mb-3">Release history</h2>
-      <p v-if="!releaseNotes.length" class="text-meta text-[14px]">No release notes yet.</p>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-left text-[14px]">
-          <thead class="text-[12px] uppercase text-meta border-b border-field-border">
-            <tr>
-              <th class="py-2 pr-4 font-medium">Version</th>
-              <th class="py-2 pr-4 font-medium">Published</th>
-              <th class="py-2 font-medium">Summary</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-field-border">
-            <tr v-for="note in releaseNotes" :key="note.id">
-              <td class="py-3 pr-4 whitespace-nowrap">v{{ note.version }}</td>
-              <td class="py-3 pr-4 whitespace-nowrap">{{ absolute(note.publishedAt) }}</td>
-              <td class="py-3">{{ summary(note.body || '') }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <template #sidebar>
+      <ReleaseNotesPanel :items="releaseNotes" />
+    </template>
   </ConsoleLayout>
 </template>
