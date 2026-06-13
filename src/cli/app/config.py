@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 import os
 
 from app.api_client import BASE_URL as DEFAULT_API_URL
@@ -20,7 +20,10 @@ class Config:
 
     @classmethod
     def load(cls) -> "Config":
-        load_dotenv()
+        # Load .env from the current working directory (the target project), not
+        # from the rylees source tree. usecwd=True makes find_dotenv search up
+        # from the cwd instead of from this file's location.
+        load_dotenv(find_dotenv(usecwd=True))
         required = {
             "RYLEES_API_TOKEN": None,
             "RYLEES_PROJECT_TOKEN": None,
