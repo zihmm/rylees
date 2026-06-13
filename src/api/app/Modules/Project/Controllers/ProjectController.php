@@ -61,6 +61,20 @@ final class ProjectController
         return response()->json($result);
     }
 
+    public function showByToken(Request $request, string $projectToken): JsonResponse
+    {
+        $project = Project::query()->where('token', $projectToken)->firstOrFail();
+
+        if ($project->customer->user_id !== auth()->id())
+        {
+            return response()->json(['message' => 'Forbidden.', 'code' => 'forbidden'], 403);
+        }
+
+        $project = $this->repository->loadDetail($project);
+
+        return response()->json((new ProjectDetailResource($project))->resolve());
+    }
+
     private function authorizeCustomer(Customer $customer): void
     {
         if ($customer->user_id !== auth()->id())

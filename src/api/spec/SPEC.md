@@ -1053,6 +1053,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/customers/{customer}/projects', [ProjectController::class, 'store']);
     Route::get('/customers/{customer}/projects/{project}', [ProjectController::class, 'show']);
     Route::patch('/customers/{customer}/projects/{project}', [ProjectController::class, 'update']);
+
+    // CLI generation — resolves a project by its token (used by the rylees CLI).
+    Route::get('/projects/{projectToken}', [ProjectController::class, 'showByToken']);
 });
 ```
 
@@ -1063,9 +1066,10 @@ public function index(Request $request, Customer $customer): JsonResponse // 200
 public function store(StoreProjectRequest $request, Customer $customer): JsonResponse // 201
 public function show(Request $request, Customer $customer, Project $project): JsonResponse // 200
 public function update(UpdateProjectRequest $request, Customer $customer, Project $project): JsonResponse // 200
+public function showByToken(Request $request, string $projectToken): JsonResponse // 200
 ```
 
-Authorization: verify `$customer->user_id === auth()->id()`. For project endpoints also verify `$project->customer_id === $customer->id`.
+Authorization: verify `$customer->user_id === auth()->id()`. For project endpoints also verify `$project->customer_id === $customer->id`. For `showByToken`, resolve the project via `projects.token` and verify `$project->customer->user_id === auth()->id()` (else `403`).
 
 **`StoreProjectRequest` validation rules**
 
@@ -1136,6 +1140,31 @@ Authorization: verify `$customer->user_id === auth()->id()`. For project endpoin
 ```
 
 > `customer.organisation_slug` is the `organisations.slug` of the customer's organisation. The frontend uses this to call `GET /public/release-history/{organisation_slug}/{project.key}`.
+
+**`GET /projects/{projectToken}` response shape**
+
+CLI generation endpoint. `{projectToken}` resolves via `projects.token`. Returns the same shape as `GET /customers/{id}/projects/{projectId}`:
+
+```json
+{
+  "id": "...",
+  "name": "Member Portal",
+  "key": "member-portal",
+  "description": "...",
+  "token": "<64-char-token>",
+  "customer": {
+    "id": "...",
+    "name": "Acme Ltd.",
+    "industry": "Architecture",
+    "organisation_slug": "acme-ltd"
+  },
+  "llm": { "temperature": 0.5, "tonality": "professional" },
+  "created_at": "...",
+  "updated_at": "..."
+}
+```
+
+> The `rylees` CLI reads `name`, `key`, `description`, `customer.name`, `customer.industry`, `llm.temperature`, and `llm.tonality` from this response before generating a release note. Returns `403` if the project's customer does not belong to the authenticated developer, `404` if no project matches the token.
 
 **`UpdateProjectRequest` validation rules**
 
