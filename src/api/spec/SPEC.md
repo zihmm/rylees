@@ -1147,6 +1147,9 @@ Contact response shape (201 and 200):
 
 ```php
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
+    // Global overview of every project owned by the authenticated developer.
+    Route::get('/projects', [ProjectController::class, 'all']);
+
     Route::get('/customers/{customer}/projects', [ProjectController::class, 'index']);
     Route::post('/customers/{customer}/projects', [ProjectController::class, 'store']);
     Route::get('/customers/{customer}/projects/{project}', [ProjectController::class, 'show']);
@@ -1160,6 +1163,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 **`ProjectController`**
 
 ```php
+public function all(Request $request): JsonResponse // 200
 public function index(Request $request, Customer $customer): JsonResponse // 200
 public function store(StoreProjectRequest $request, Customer $customer): JsonResponse // 201
 public function show(Request $request, Customer $customer, Project $project): JsonResponse // 200
@@ -1167,7 +1171,25 @@ public function update(UpdateProjectRequest $request, Customer $customer, Projec
 public function showByToken(Request $request, string $projectToken): JsonResponse // 200
 ```
 
-Authorization: verify `$customer->user_id === auth()->id()`. For project endpoints also verify `$project->customer_id === $customer->id`. For `showByToken`, resolve the project via `projects.token` and verify `$project->customer->user_id === auth()->id()` (else `403`).
+Authorization: verify `$customer->user_id === auth()->id()`. For project endpoints also verify `$project->customer_id === $customer->id`. For `showByToken`, resolve the project via `projects.token` and verify `$project->customer->user_id === auth()->id()` (else `403`). `all` is implicitly scoped: it only returns projects whose customer's `user_id` matches the authenticated developer.
+
+**`GET /projects` — developer-wide project overview**
+
+Returns every non-deleted project across all of the authenticated developer's
+customers, ordered by `updated_at` descending. Used by the console dashboard.
+Backed by `ProjectRepository::forUser()`, which eager-loads
+`customer.organisation` and `releaseHistory.latestReleaseNote` to avoid N+1.
+
+Per-item fields (`ProjectOverviewResource`):
+- `id` — project UUID
+- `name` — project name
+- `customer_id` — the customer's UUID
+- `customer_name` — the customer organisation's name
+- `description` — first 180 characters of the project description (`Str::limit`, ellipsis appended when truncated); `null` if unset
+- `version` — current version `"{major}.{minor}.{patch}"` from the latest release note (by `created_at`); `null` when the project has no release notes yet
+- `updated_at` — the project's last-update timestamp
+
+`token` is **never** included (list response — see §9 security rules).
 
 **`StoreProjectRequest` validation rules**
 
@@ -1197,6 +1219,26 @@ Authorization: verify `$customer->user_id === auth()->id()`. For project endpoin
   "created_at": "..."
 }
 ```
+
+**`GET /projects` response shape**
+
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "name": "Member Portal",
+      "customer_id": "efaf3def-b091-46e1-b3d9-6c3f7f2e2597",
+      "customer_name": "Acme Ltd.",
+      "description": "First 180 characters of the description…",
+      "version": "1.2.3",
+      "updated_at": "2026-06-05T10:15:00Z"
+    }
+  ]
+}
+```
+
+> `version` is `null` until the project has at least one release note. `description` is `null` when unset, otherwise truncated to 180 characters. No `token`.
 
 **`GET /customers/{id}/projects` response shape**
 
@@ -1765,6 +1807,13 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 - `test_project_token_appears_in_single_response_not_list`
 - `test_patch_project_cannot_change_token_or_key`
 - `test_project_detail_includes_customer_organisation_slug`
+- `test_list_all_projects_returns_overview_for_every_owned_customer`
+- `test_list_all_projects_excludes_other_users_projects`
+- `test_list_all_projects_excludes_token`
+- `test_list_all_projects_reports_customer_name_and_latest_version`
+- `test_list_all_projects_version_is_null_without_release_notes`
+- `test_list_all_projects_truncates_description_to_180_chars`
+- `test_list_all_projects_requires_authentication`
 
 **`ReleaseHistoryTest`** (tests for AC-API-10)
 - `test_publish_with_no_prior_notes_creates_version_0_1_0` (minor bump)
@@ -1848,11 +1897,12 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 - `POST /customers/{customerId}/projects` creates a `projects` row with a generated `key` (slug, unique per customer) and a 64-character random `token`, and automatically creates one `release_histories` row.
 - `PATCH` endpoints update only the fields provided; omitted fields remain unchanged.
 - `projects.token` and `projects.key` cannot be changed via `PATCH /customers/{customerId}/projects/{id}`.
+- `GET /projects` returns every non-deleted project across all of the authenticated developer's customers, each with `name`, `customer_name`, a 180-character `description` excerpt, `version` (latest release note, or `null`), and `updated_at`; projects owned by other developers never appear.
 
 ### AC-API-09 — Security field exposure
 
 - `api_key` does not appear in any list-level response; it is present only in `GET /users/me`.
-- `projects.token` does not appear in list responses (the global list via `GET /customers`); it is present in `GET /customers/{id}/projects`, `GET /customers/{id}/projects/{id}`, and the `POST` create response.
+- `projects.token` does not appear in list responses (the global list via `GET /customers`, nor the project overview via `GET /projects`); it is present in `GET /customers/{id}/projects`, `GET /customers/{id}/projects/{id}`, and the `POST` create response.
 - Passwords are stored as bcrypt hashes; plaintext never appears in any response or log.
 
 ### AC-API-10 — CLI publish endpoint

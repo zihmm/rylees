@@ -19,6 +19,7 @@ https://api.rylees.ai/v1
 | GET | [/users/me](#get-usersme) | Retrieve the authenticated user, profile, and organisation. | y |
 | PATCH | [/users/me](#patch-usersme) | Update user profile, organisation, or password. | y |
 | DELETE | [/users/me](#delete-usersme) | Soft-delete own user account. | y |
+| GET | [/projects](#get-projects) | Retrieve an overview of all projects across the developer's customers. | y |
 | GET | [/customers](#get-customers) | Retrieve paginated list of customers. | y |
 | POST | [/customers](#post-customers) | Create a new customer. | y |
 | GET | [/customers/{id}](#get-customersid) | Retrieve full details of a specific customer. | y |
@@ -290,6 +291,52 @@ Same shape as `GET /users/me`.
 Soft-deletes the `users` and `user_profiles` rows. Revokes all active Sanctum tokens. Does **not** delete the `organisations` row.
 
 ### Response `204 No Content`
+
+---
+
+## GET /projects
+
+Returns a flat overview of **all** non-deleted projects belonging to the authenticated developer, across every one of their customers. Ordered by `updated_at` descending (most recently updated first). Used by the console dashboard to show projects at a glance.
+
+This is a list response, so `token` is **not** included. There is no pagination; the set is scoped to a single developer's projects.
+
+### Request
+
+```bash
+curl -X GET \
+  "https://api.rylees.ai/v1/projects" \
+  -H "Authorization: Bearer <access-token>"
+```
+
+### Response `200 OK`
+
+```json
+{
+  "data": [
+    {
+      "id": "8d4c8a16-ba88-4377-8d34-6e18c313903b",
+      "name": "Member Portal",
+      "customer_id": "efaf3def-b091-46e1-b3d9-6c3f7f2e2597",
+      "customer_name": "Acme Ltd.",
+      "description": "A customer-facing portal for membership management…",
+      "version": "1.2.3",
+      "updated_at": "2026-06-05T10:15:00Z"
+    }
+  ]
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `id` | Project UUID. |
+| `name` | Project name. |
+| `customer_id` | UUID of the customer the project belongs to. |
+| `customer_name` | Name of the customer's organisation. |
+| `description` | First 180 characters of the project description (ellipsis appended when truncated); `null` if no description is set. |
+| `version` | Current version `"{major}.{minor}.{patch}"` taken from the project's most recent release note; `null` until the project has at least one release note. |
+| `updated_at` | Timestamp of the project's last update (ISO 8601 UTC). |
+
+> Only projects whose customer belongs to the authenticated developer are returned; another developer's projects never appear.
 
 ---
 

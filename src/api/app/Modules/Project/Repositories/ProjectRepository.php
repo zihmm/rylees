@@ -6,6 +6,7 @@ namespace App\Modules\Project\Repositories;
 
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Project\Models\Project;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 final class ProjectRepository
@@ -18,6 +19,21 @@ final class ProjectRepository
         return Project::query()
             ->where('customer_id', $customer->id)
             ->with(['tonality', 'temperature'])
+            ->get();
+    }
+
+    /**
+     * All projects across every customer owned by the given user, with the
+     * data needed for the console overview list (customer name, latest version).
+     *
+     * @return Collection<int, Project>
+     */
+    public function forUser(string $userId): Collection
+    {
+        return Project::query()
+            ->whereHas('customer', static fn (Builder $query): Builder => $query->where('user_id', $userId))
+            ->with(['customer.organisation', 'releaseHistory.latestReleaseNote'])
+            ->orderByDesc('updated_at')
             ->get();
     }
 

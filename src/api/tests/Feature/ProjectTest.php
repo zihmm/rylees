@@ -7,6 +7,8 @@ use App\Models\LlmTonalityType;
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Project\Models\Project;
+use App\Modules\ReleaseHistory\Models\ReleaseHistory;
+use App\Modules\ReleaseHistory\Models\ReleaseNote;
 use Illuminate\Support\Str;
 
 test('test_create_project_generates_key_and_token_and_creates_release_history', function (): void
@@ -86,4 +88,120 @@ test('test_project_detail_includes_customer_organisation_slug', function (): voi
 
     $response->assertStatus(200);
     expect($response->json('customer.organisation_slug'))->toBe($customer->organisation->slug);
+});
+
+test('test_list_all_projects_returns_overview_for_every_owned_customer', function (): void
+{
+    $user = User::factory()->create();
+    $customerA = Customer::factory()->create(['user_id' => $user->id]);
+    $customerB = Customer::factory()->create(['user_id' => $user->id]);
+    Project::factory()->create(['customer_id' => $customerA->id, 'name' => 'Alpha']);
+    Project::factory()->create(['customer_id' => $customerB->id, 'name' => 'Beta']);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    $response->assertJsonStructure([
+        'data' => [['id', 'name', 'customer_id', 'customer_name', 'description', 'version', 'updated_at']],
+    ]);
+    expect($response->json('data'))->toHaveCount(2);
+    expect(collect($response->json('data'))->pluck('name')->all())
+        ->toContain('Alpha', 'Beta');
+});
+
+test('test_list_all_projects_excludes_other_users_projects', function (): void
+{
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    $mine = Customer::factory()->create(['user_id' => $user->id]);
+    $theirs = Customer::factory()->create(['user_id' => $other->id]);
+    Project::factory()->create(['customer_id' => $mine->id, 'name' => 'Mine']);
+    Project::factory()->create(['customer_id' => $theirs->id, 'name' => 'Theirs']);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.name'))->toBe('Mine');
+});
+
+test('test_list_all_projects_excludes_token', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    expect($response->getContent())->not->toContain('"token"');
+    expect($response->getContent())->not->toContain($project->token);
+});
+
+test('test_list_all_projects_reports_customer_name_and_latest_version', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+    $history = ReleaseHistory::factory()->create(['project_id' => $project->id]);
+
+    // Older note first, then the current version — latest is resolved by created_at.
+    ReleaseNote::factory()->create([
+        'release_history_id' => $history->id,
+        'author_id' => $user->id,
+        'version_major' => 1,
+        'version_minor' => 0,
+        'version_patch' => 0,
+        'created_at' => now()->subDay(),
+    ]);
+    ReleaseNote::factory()->create([
+        'release_history_id' => $history->id,
+        'author_id' => $user->id,
+        'version_major' => 1,
+        'version_minor' => 2,
+        'version_patch' => 3,
+        'created_at' => now(),
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    expect($response->json('data.0.id'))->toBe($project->id);
+    expect($response->json('data.0.customer_id'))->toBe($customer->id);
+    expect($response->json('data.0.customer_name'))->toBe($customer->organisation->name);
+    expect($response->json('data.0.version'))->toBe('1.2.3');
+});
+
+test('test_list_all_projects_version_is_null_without_release_notes', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+    ReleaseHistory::factory()->create(['project_id' => $project->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    expect($response->json('data.0.version'))->toBeNull();
+});
+
+test('test_list_all_projects_truncates_description_to_180_chars', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    Project::factory()->create([
+        'customer_id' => $customer->id,
+        'description' => str_repeat('a', 300),
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    // Str::limit keeps 180 chars and appends an ellipsis.
+    expect($response->json('data.0.description'))->toBe(str_repeat('a', 180).'...');
+});
+
+test('test_list_all_projects_requires_authentication', function (): void
+{
+    $this->getJson('/v1/projects')->assertStatus(401);
 });

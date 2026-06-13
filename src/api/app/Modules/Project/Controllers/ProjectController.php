@@ -11,6 +11,7 @@ use App\Modules\Project\Requests\StoreProjectRequest;
 use App\Modules\Project\Requests\UpdateProjectRequest;
 use App\Modules\Project\Resources\ProjectDetailResource;
 use App\Modules\Project\Resources\ProjectListResource;
+use App\Modules\Project\Resources\ProjectOverviewResource;
 use App\Modules\Project\Services\ProjectService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,15 @@ final class ProjectController
         private readonly ProjectService $service,
         private readonly ProjectRepository $repository,
     ) {}
+
+    public function all(Request $request): JsonResponse
+    {
+        $projects = $this->repository->forUser(auth()->id());
+
+        return response()->json([
+            'data' => ProjectOverviewResource::collection($projects)->resolve(),
+        ]);
+    }
 
     public function index(Request $request, Customer $customer): JsonResponse
     {
