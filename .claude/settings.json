@@ -1,22 +1,5 @@
 {
   "enabledPlugins": {
     "codex@openai-codex": true
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"A git commit was just made. Use the codex:rescue skill to review the committed changes (git diff HEAD~1..HEAD), then apply any bugs, security issues, or quality findings directly to the working tree. Do not create a new commit for these fixes.\"}}'; exit 2",
-            "if": "Bash(git commit*)",
-            "asyncRewake": true,
-            "statusMessage": "Scheduling Codex post-commit review...",
-            "rewakeSummary": "Codex review requested for last commit"
-          }
-        ]
-      }
-    ]
   }
 }
