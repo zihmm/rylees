@@ -22,7 +22,7 @@ This project was built as part of the CAS **AI-assisted Software Engineering** a
 
 ## The Platform
 
-Rylees is useful for any team that ships software regularly but struggles to keep customers informed about what actually changed. Writing release notes by hand is tedious and easily skipped, so customers are often left guessing. Rylees removes that friction by turning the Git history you already produce into clear, customer-friendly summaries — no manual writing required. Because every note passes through human review before publishing, you keep full control over tone and accuracy. The result is a maintained, multi-language release history that builds trust with your customers at almost no extra effort.
+Rylees is useful for any team that ships software regularly but struggles to keep customers informed about what actually changed, turning the Git history you already produce into clear, customer-friendly summaries — no manual writing required. Each note is AI-shaped by per-project settings the developer defines: an **LLM tonality**, an **LLM temperature**, and a **project description** that together steer how the generated release note reads. Because every note also passes through human review before publishing, the developer stays in full control over tone, accuracy, and what goes live. The result is a maintained, multi-language release history that builds trust with your customers at almost no extra effort.
 
 <p align="center">
     <picture>
@@ -32,7 +32,7 @@ Rylees is useful for any team that ships software regularly but struggles to kee
     
 ## How It Works
 
-Rylees is made up of three components that work together:
+The project is made up of three components that work together:
 
 | Component                               | What it does                                                                                 |
 | :-------------------------------------- | :------------------------------------------------------------------------------------------- |
@@ -50,14 +50,11 @@ Typical flow:
 
 ## Getting Started — Register an Account
 
-The Developer Console lives at **[console.rylees.ai](https://console.rylees.ai)** (the developer entry point for `developer.rylees.ai`).
+The Developer Console lives at **[console.rylees.ai](https://console.rylees.ai)**.
 
-1. Open the console and choose **Register**.
-2. Fill in your credentials, personal details, and your organisation.
-3. Submit the form — you'll be told to _"check your email to activate your account."_
-4. Open the activation email and click the activation link. Your account is now active.
-5. Log in. From **Account → API key**, copy your personal **API key** (used by the CLI).
-6. Create a **customer**, then a **project** under it. Open the project to copy its **project token**.
+1. Register your account at **Register**
+2. Log in. From **Account → API key**, copy your personal **API key** (used by the CLI).
+3. Create a **customer**, then a **project** under it. Open the project to copy its **project token**.
 
 You now have everything the CLI needs: your `API key` and the project's `token`.
 
@@ -79,7 +76,7 @@ rylees --version
 
 ### Configuration
 
-The CLI reads its configuration from a `.env` file in the current working directory. A `.env.example` ships with the package — copy it and fill in your values:
+The CLI reads its configuration from a `.env` file in the current working directory (where your /.git lives). A `.env.example` ships with the package — copy it and fill in your values:
 
 ```bash
 # Required
@@ -100,10 +97,10 @@ Run the CLI from inside the Git repository you want to document:
 
 ```bash
 # Generate between two tags, bump the minor version (interactive review)
-rylees gen --start v1.2.0 --end v1.3.0
+rylees generate --start v1.2.0 --end v1.3.0
 
 # Generate between two commits, bump the patch version
-rylees gen -s 8f2a1c4 -e HEAD --type commit --patch
+rylees generate -s 8f2a1c4 -e HEAD --type commit --patch
 
 # CI/CD: generate and publish immediately, skipping human review
 rylees gen --start v1.2.0 --end v1.3.0 --publish
