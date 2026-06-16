@@ -20,6 +20,8 @@ Rylees bridges the gap between a developer's Git history and what customers actu
 
 This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification and implementation to deployment.
 
+> Designed & engineered by human with love.<br>Made by AI.
+
 ## The Platform
 
 Rylees is useful for any team that ships software regularly but struggles to keep customers informed about what actually changed, turning the Git history you already produce into clear, customer-friendly summaries — no manual writing required. Each note is AI-shaped by per-project settings the developer defines: an **LLM tonality**, an **LLM temperature**, and a **project description** that together steer how the generated release note reads. Because every note also passes through human review before publishing, the developer stays in full control over tone, accuracy, and what goes live. The result is a maintained, multi-language release history that builds trust with your customers at almost no extra effort.
