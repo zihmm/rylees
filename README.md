@@ -23,7 +23,7 @@ This project was built as part of the CAS **AI-assisted Software Engineering** a
 ## The Platform
 
 Rylees is useful for any team that ships software regularly but struggles to keep customers informed about what actually changed. Writing release notes by hand is tedious and easily skipped, so customers are often left guessing. Rylees removes that friction by turning the Git history you already produce into clear, customer-friendly summaries — no manual writing required. Because every note passes through human review before publishing, you keep full control over tone and accuracy. The result is a maintained, multi-language release history that builds trust with your customers at almost no extra effort.
-    
+
 <p align="center">
     <picture>
         <img alt="Demo Screenshot" src="assets/demo-screenshot.jpg"  align="center" width="100%">
@@ -34,11 +34,11 @@ Rylees is useful for any team that ships software regularly but struggles to kee
 
 Rylees is made up of three components that work together:
 
-| Component         | What it does                                                                                 |
-| ----------------- | -------------------------------------------------------------------------------------------- |
-| **CLI tool**      | Runs on a developer's machine, reads the Git history, asks an LLM to draft the release note. |
-| **Backend API**   | Stores customers, projects, API tokens, and the published release history.                   |
-| **Developer Console & Release History** | Web apps for managing projects and for customers to read what changed.    |
+| Component                               | What it does                                                                                 |
+|: -------------------------------------- |: ------------------------------------------------------------------------------------------- |
+| **CLI tool**                            | Runs on a developer's machine, reads the Git history, asks an LLM to draft the release note. |
+| **Backend API**                         | Stores customers, projects, API tokens, and the published release history.                   |
+| **Developer Console & Release History** | Web apps for managing projects and for customers to read what changed.                       |
 
 The typical flow:
 
@@ -54,7 +54,7 @@ The Developer Console lives at **[console.rylees.ai](https://console.rylees.ai)*
 
 1. Open the console and choose **Register**.
 2. Fill in your credentials, personal details, and your organisation.
-3. Submit the form — you'll be told to *"check your email to activate your account."*
+3. Submit the form — you'll be told to _"check your email to activate your account."_
 4. Open the activation email and click the activation link. Your account is now active.
 5. Log in. From **Account → API key**, copy your personal **API key** (used by the CLI).
 6. Create a **customer**, then a **project** under it. Open the project to copy its **project token**.
@@ -111,13 +111,13 @@ rylees gen --start v1.2.0 --end v1.3.0 --publish
 
 Common options:
 
-| Option              | Description                                              | Default      |
-| ------------------- | ------------------------------------------------------- | ------------ |
-| `-s`, `--start`     | Start tag or commit hash                                | — (required) |
-| `-e`, `--end`       | End tag or commit hash                                  | `HEAD`       |
-| `-t`, `--type`      | Interpret refs as `tag` or `commit`                     | `tag`        |
-| `--major/minor/patch` | Which version component to bump (exactly one)          | `--minor`    |
-| `-p`, `--publish`   | ⚠ Skip the review step and publish immediately          | off          |
+| Option                | Description                                    | Default      |
+| :-------------------- | :--------------------------------------------- | :----------- |
+| `-s`, `--start`       | Start tag or commit hash                       | — (required) |
+| `-e`, `--end`         | End tag or commit hash                         | `HEAD`       |
+| `-t`, `--type`        | Interpret refs as `tag` or `commit`            | `tag`        |
+| `--major/minor/patch` | Which version component to bump (exactly one)  | `--minor`    |
+| `-p`, `--publish`     | ⚠ Skip the review step and publish immediately | off          |
 
 ### The review step (Human-in-the-loop)
 
@@ -131,7 +131,6 @@ Generated release note:
 
 ─────────────────────────────────────────────────────────
 [A] Accept and publish   [R] Regenerate     [E] Edit
-> _
 ```
 
 - **A** — publish the note; the CLI prints the resulting status and version (e.g. `1.3.0`).
