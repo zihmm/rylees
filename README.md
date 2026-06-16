@@ -35,12 +35,12 @@ Rylees is useful for any team that ships software regularly but struggles to kee
 Rylees is made up of three components that work together:
 
 | Component                               | What it does                                                                                 |
-|: -------------------------------------- |: ------------------------------------------------------------------------------------------- |
+| :-------------------------------------- | :------------------------------------------------------------------------------------------- |
 | **CLI tool**                            | Runs on a developer's machine, reads the Git history, asks an LLM to draft the release note. |
 | **Backend API**                         | Stores customers, projects, API tokens, and the published release history.                   |
 | **Developer Console & Release History** | Web apps for managing projects and for customers to read what changed.                       |
 
-The typical flow:
+Typical flow:
 
 1. A developer registers an account and creates a **customer** and a **project** in the Developer Console.
 2. Each project gets a unique **project token**; the developer holds a personal **API key**.
