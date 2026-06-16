@@ -18,9 +18,9 @@ Rylees bridges the gap between a developer's Git history and what customers actu
 
 ## Project Context
 
-> Designed & engineered by human with love.<br>Made by AI.
-
 This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification to implementation and deployment.
+
+> Designed & engineered by human with love.<br>Made by AI.
 
 ## The Platform
 
