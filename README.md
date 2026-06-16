@@ -15,6 +15,14 @@ Rylees bridges the gap between a developer's Git history and what customers actu
 - **Public release history** per project, accessible without an account
 - **Multi-language support** — release notes can be translated to English, French and German on demand
 - **Developer Console** to manage customers, projects, and API tokens
+
+## Project Context
+
+This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification and implementation to deployment.
+
+## The Platform
+
+Rylees is useful for any team that ships software regularly but struggles to keep customers informed about what actually changed. Writing release notes by hand is tedious and easily skipped, so customers are often left guessing. Rylees removes that friction by turning the Git history you already produce into clear, customer-friendly summaries — no manual writing required. Because every note passes through human review before publishing, you keep full control over tone and accuracy. The result is a maintained, multi-language release history that builds trust with your customers at almost no extra effort.
     
 <p align="center">
     <picture>
@@ -22,10 +30,6 @@ Rylees bridges the gap between a developer's Git history and what customers actu
     </picture>
 </p>
     
-## Project Context
-
-This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification and implementation to deployment.
-
 ## How It Works
 
 Rylees is made up of three components that work together:
@@ -145,6 +149,12 @@ https://{customer-slug}.rylees.ai/{project-key}
 ```
 
 Customers see a vertical timeline of releases (newest first) with a version badge, publication date, and the full note. A **DE / EN / FR** language switcher in the header translates the notes on demand (default: German).
+
+<p align="center">
+    <picture>
+        <img alt="History Screenshot" src="assets/history-screenshot.jpg"  align="center" width="100%">
+    </picture>
+</p>
 
 ## AI Disclaimer
 
