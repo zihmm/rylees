@@ -5,7 +5,6 @@
         <img alt="Logo Rylees.ai" src="assets/logo/rylees-gh-light.png"  align="center" width="380" height="160">
     </picture>
 </p>
-<p align="center">Ship it. Explain it. Automatically.</p>
 
 ## Introduction
 
