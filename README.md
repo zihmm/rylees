@@ -1,8 +1,8 @@
 <p align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="assets/logo/rylees-gh-dark.png" width="400" height="250">
-        <source media="(prefers-color-scheme: light)" srcset="assets/logo/rylees-gh-light.png" width="400" height="250">
-        <img alt="Logo Rylees.ai" src="assets/logo/rylees-gh-light.png"  align="center" width="400" height="250">
+        <source media="(prefers-color-scheme: dark)" srcset="assets/logo/rylees-gh-dark.png" width="380">
+        <source media="(prefers-color-scheme: light)" srcset="assets/logo/rylees-gh-light.png" width="380">
+        <img alt="Logo Rylees.ai" src="assets/logo/rylees-gh-light.png"  align="center" width="380">
     </picture>
 </p>
 
