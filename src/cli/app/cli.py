@@ -33,6 +33,7 @@ def _spinner(message: str):
         for frame in itertools.cycle(SPINNER_FRAMES):
             if done.is_set():
                 break
+
             sys.stderr.write(f"\r{frame} {message}")
             sys.stderr.flush()
             time.sleep(0.08)

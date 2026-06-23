@@ -5,8 +5,9 @@
         <img alt="Logo Rylees.ai" src="assets/logo/rylees-gh-light.png"  align="center" width="380" height="160">
     </picture>
 </p>
+<p align="center">Ship it. Explain it. Automatically.</p>
 
-# Rylees — Ship it. Explain it. Automatically.
+## Introduction
 
 Rylees bridges the gap between a developer's Git history and what customers actually need to know. It takes the code diffs and commit messages of a release cycle, runs them through an LLM/AI model, and produces a short readable summary — without the developer having to write a single sentence manually. The result can be reviewed, approved, and published to a per-project release history page that customers can visit at any time.
 
@@ -20,15 +21,15 @@ Rylees bridges the gap between a developer's Git history and what customers actu
 
 This project was built as part of the CAS **AI-assisted Software Engineering** at [Fernfachhochschule Schweiz (FFHS)](https://www.ffhs.ch), led by **Werner Schäfer** and **Daniel Senften**. It serves as a practical demonstration of AI-assisted engineering across the full development lifecycle — from specification to implementation and deployment.
 
-> Designed & engineered by human with love.<br>Made by AI.
+> Designed & engineered by human with love. Made by AI.
 
-## The Platform
+## Project Description
 
 Rylees is useful for any team that ships software regularly but struggles to keep customers informed about what actually changed, turning the Git history you already produce into clear, customer-friendly summaries — no manual writing required. Each note is AI-shaped by per-project settings the developer defines: an **LLM tonality**, an **LLM temperature**, and a **project description** that together steer how the generated release note reads. Because every note also passes through human review before publishing, the developer stays in full control over tone, accuracy, and what goes live. The result is a maintained, multi-language release history that builds trust with your customers at almost no extra effort.
 
 <p align="center">
     <picture>
-        <img alt="Demo Screenshot" src="assets/demo-screenshot.jpg"  align="center" width="100%">
+        <img alt="Demo Screenshot" src="assets/cli-screenshot.png"  width="100%">
     </picture>
 </p>
     
@@ -150,7 +151,7 @@ Customers see a vertical timeline of releases (newest first) with a version badg
 
 <p align="center">
     <picture>
-        <img alt="History Screenshot" src="assets/history-screenshot.jpg"  align="center" width="100%">
+        <img alt="History Screenshot" src="assets/history-screenshot.png" width="100%">
     </picture>
 </p>
 
