@@ -1,0 +1,69 @@
+# Dev overlay: bundled PostgreSQL, source bind-mounts, frontend watch-build.
+# Mail is NOT containerised — it goes to the existing Mailtrap account via the
+# MAIL_* values in src/api/.env.
+
+x-api-env: &api-env
+  APP_ENV: local
+  APP_DOMAIN: ${APP_DOMAIN:-rylees.test}
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: ${DB_DATABASE:-rylees}
+  DB_USERNAME: ${DB_USERNAME:-rylees}
+  DB_PASSWORD: ${DB_PASSWORD:-rylees}
+
+services:
+  web:
+    build:
+      target: dev
+    environment: *api-env
+    volumes:
+      - ../src/api:/var/www/api
+      - ../src/frontend/build:/var/www/frontend:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  queue:
+    build:
+      target: dev
+    environment: *api-env
+    volumes:
+      - ../src/api:/var/www/api
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Rebuilds the two SPAs into src/frontend/build on every change. Apache (web)
+  # serves that build dir, so subdomain routing matches production exactly.
+  # For instant HMR instead, run `npm run dev` on the host pointing /v1 at
+  # http://api.rylees.test.
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run build -- --watch"
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ../src/frontend:/app
+      - frontend_node_modules:/app/node_modules
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-rylees}
+      POSTGRES_USER: ${DB_USERNAME:-rylees}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rylees}
+    ports:
+      - "${DB_PORT_HOST:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-rylees}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  frontend_node_modules:

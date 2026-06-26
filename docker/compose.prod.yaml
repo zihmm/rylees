@@ -1,0 +1,34 @@
+# Prod overlay: baked image, NO database container (external PostgreSQL),
+# secrets supplied via the environment / a root .env. App + frontend are baked
+# into the image at build time.
+
+x-api-env: &api-env
+  APP_ENV: production
+  APP_DOMAIN: ${APP_DOMAIN:-rylees.ai}
+  APP_URL: ${APP_URL:-https://api.rylees.ai}
+  APP_KEY: ${APP_KEY:?APP_KEY is required in production}
+  DB_CONNECTION: pgsql
+  DB_HOST: ${DB_HOST:?external DB host is required}
+  DB_PORT: ${DB_PORT:-5432}
+  DB_DATABASE: ${DB_DATABASE:?}
+  DB_USERNAME: ${DB_USERNAME:?}
+  DB_PASSWORD: ${DB_PASSWORD:?}
+  MAIL_MAILER: ${MAIL_MAILER:-smtp}
+  MAIL_HOST: ${MAIL_HOST:-}
+  MAIL_PORT: ${MAIL_PORT:-}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+services:
+  web:
+    build:
+      target: prod
+    environment: *api-env
+
+  queue:
+    build:
+      target: prod
+    environment: *api-env
+    profiles: ["worker"]

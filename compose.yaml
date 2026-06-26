@@ -1,0 +1,5 @@
+# Dev stack pointer — all real config lives under docker/.
+# Run from the repo root:  docker compose up --build
+include:
+  - docker/compose.base.yaml
+  - docker/compose.dev.yaml

@@ -1,0 +1,26 @@
+# Base service shapes shared by dev and prod. Not meant to run on its own —
+# the dev/prod overlays add the build target, environment and (dev) database.
+# Build context is the repo root so the image can reach src/api and src/frontend.
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:80"
+
+  # Optional queue worker (enable with `--profile worker`). Only needed when
+  # QUEUE_CONNECTION is not `sync`. Overrides the image entrypoint so it runs
+  # the worker instead of Apache/migrate.
+  queue:
+    build:
+      context: ..
+      dockerfile: docker/api/Dockerfile
+    working_dir: /var/www/api
+    entrypoint: ["php", "artisan", "queue:work", "--tries=1", "--sleep=3"]
+    restart: unless-stopped
+    profiles: ["worker"]
+    depends_on:
+      - web

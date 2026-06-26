@@ -1,0 +1,79 @@
+# Rendered by entrypoint.sh via: envsubst '${APP_DOMAIN}'
+# Only ${APP_DOMAIN} is substituted; Apache runtime vars (e.g. ${APACHE_LOG_DIR})
+# are left intact.
+
+# ---------------------------------------------------------------------------
+# api.<domain> — Laravel backend (mod_php)
+# ---------------------------------------------------------------------------
+<VirtualHost *:80>
+    ServerName api.${APP_DOMAIN}
+    DocumentRoot /var/www/api/public
+
+    <Directory /var/www/api/public>
+        AllowOverride All
+        Require all granted
+        Options -Indexes +FollowSymLinks
+
+        # Standard Laravel front-controller rewrite (public/.htaccess is not shipped).
+        <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteRule ^ index.php [L]
+        </IfModule>
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/api-error.log
+    CustomLog ${APACHE_LOG_DIR}/api-access.log combined
+</VirtualHost>
+
+# ---------------------------------------------------------------------------
+# console.<domain> — Developer Console SPA
+# DocumentRoot is the shared build root so /assets/* resolves; non-file
+# requests fall back to the console entry HTML.
+# ---------------------------------------------------------------------------
+<VirtualHost *:80>
+    ServerName console.${APP_DOMAIN}
+    DocumentRoot /var/www/frontend
+
+    <Directory /var/www/frontend>
+        AllowOverride None
+        Require all granted
+        Options -Indexes +FollowSymLinks
+    </Directory>
+
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    RewriteRule ^ /console/index.html [L]
+
+    ErrorLog ${APACHE_LOG_DIR}/console-error.log
+    CustomLog ${APACHE_LOG_DIR}/console-access.log combined
+</VirtualHost>
+
+# ---------------------------------------------------------------------------
+# <domain> and *.<domain> — Public Release History SPA (wildcard subdomain).
+# Exact api./console. ServerNames above take priority over this wildcard
+# ServerAlias, so every other slug (acme., doe-digital., …) lands here.
+# ---------------------------------------------------------------------------
+<VirtualHost *:80>
+    ServerName ${APP_DOMAIN}
+    ServerAlias *.${APP_DOMAIN}
+    DocumentRoot /var/www/frontend
+
+    <Directory /var/www/frontend>
+        AllowOverride None
+        Require all granted
+        Options -Indexes +FollowSymLinks
+    </Directory>
+
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    RewriteRule ^ /history/index.html [L]
+
+    ErrorLog ${APACHE_LOG_DIR}/history-error.log
+    CustomLog ${APACHE_LOG_DIR}/history-access.log combined
+</VirtualHost>

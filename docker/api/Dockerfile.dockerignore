@@ -1,0 +1,30 @@
+# Build context is the repo root. Keep dependency dirs, secrets and the CLI
+# out of the image so prod builds its own clean dependencies.
+.git
+**/.git
+**/.DS_Store
+
+**/vendor
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+
+src/frontend/build
+src/frontend/.vite
+
+**/.env
+!**/.env.example
+
+# CLI is pip-only — never part of the web image.
+src/cli
+
+# Local Laravel state.
+src/api/storage/logs/*
+src/api/storage/framework/cache/*
+src/api/storage/framework/sessions/*
+src/api/storage/framework/views/*
+src/api/bootstrap/cache/*
+
+docs
+assets
