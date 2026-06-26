@@ -65,6 +65,36 @@ host instead and let it proxy `/v1` to the dockerized API:
 cd src/frontend && npm run dev   # serves /console and /history on :5173
 ```
 
+### Connecting to PostgreSQL
+
+The dev `postgres` container publishes its port to the host, so any local client
+connects to `localhost`. Credentials come from the compose defaults (override
+them in the root `.env`):
+
+| Field    | Value       | `.env` key     |
+| :------- | :---------- | :------------- |
+| Host     | `localhost` | —              |
+| Port     | `5432`      | `DB_PORT_HOST` |
+| Database | `rylees`    | `DB_DATABASE`  |
+| User     | `rylees`    | `DB_USERNAME`  |
+| Password | `rylees`    | `DB_PASSWORD`  |
+
+Connection URL (psql, TablePlus, DBeaver, DataGrip, pgAdmin):
+
+```
+postgresql://rylees:rylees@localhost:5432/rylees
+```
+
+SSL is not required (local container — use `disable`/`prefer`). If port `5432` is
+already taken, set `DB_PORT_HOST=5433` in `.env` and connect on that port (the
+container still listens on 5432 internally).
+
+To open a shell client without anything installed on the host:
+
+```bash
+docker compose exec postgres psql -U rylees -d rylees
+```
+
 ### Queue worker (optional)
 
 Only needed if `QUEUE_CONNECTION` is not `sync`:
