@@ -154,6 +154,46 @@ Customers see a vertical timeline of releases (newest first) with a version badg
     </picture>
 </p>
 
+## Local Development (Docker)
+
+The Backend API and both web apps run locally in Docker with a single command. One **Apache + PHP 8.5** container serves the Laravel API and the two built Vue SPAs, a bundled **PostgreSQL 16** container provides the database (dev only — production uses an external PostgreSQL), and a **Node** container rebuilds the frontend on change. Mail is sent to your existing **Mailtrap** inbox — no mail container.
+
+> The Python **CLI** is intentionally not containerised — install it with `pip` and run it against your local Git repository (see [CLI — Installation & Usage](#cli--installation--usage)).
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/) (Desktop or Engine) with Compose v2
+- The three local hostnames resolving to `127.0.0.1`. Add to `/etc/hosts`:
+
+  ```
+  127.0.0.1  api.rylees.test console.rylees.test acme.rylees.test
+  ```
+
+  `acme` stands in for a customer slug — add more slugs as needed, or point a local dnsmasq at `*.rylees.test` to avoid editing hosts each time.
+
+### Start
+
+From the repository root:
+
+```bash
+cp docker/env.example .env        # optional — override ports / DB credentials
+docker compose up --build
+```
+
+On first start the API container generates the app key, waits for PostgreSQL, then runs the migrations and seeders automatically. Once it's up:
+
+| URL                                         | What it serves                              |
+| :------------------------------------------ | :------------------------------------------ |
+| `http://api.rylees.test/v1`                 | Backend API                                 |
+| `http://console.rylees.test`                | Developer Console                           |
+| `http://acme.rylees.test/{project-key}`     | Public Release History (slug = subdomain)   |
+
+> **Port 80 already in use?** Set a different host port: `WEB_PORT=8080 docker compose up` (then include the port in URLs, e.g. `http://api.rylees.test:8080/v1`).
+
+The `frontend` container runs `vite build --watch`, so edits to `src/frontend` are rebuilt and served automatically. For instant hot-reload instead, run `npm run dev` in `src/frontend` (it proxies `/v1` to the dockerized API).
+
+Full reference — production builds, the optional queue worker, and DNS notes — is in [`docker/README.md`](docker/README.md).
+
 ## AI Disclaimer
 
 This project was built under heavy AI-assisted engineering. Architecture and technical specification were carefully crafted by the author, using AI as a thinking partner to challenge assumptions and sharpen decisions. The spec-driven implementation was largely written and orchestrated by AI.
