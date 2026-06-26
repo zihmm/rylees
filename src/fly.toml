@@ -4,8 +4,13 @@
 # src/frontend); the Dockerfile and its production target live under docker/.
 # Without this [build] block fly looks for ./Dockerfile and fails to find one.
 #
-# Deploy from the repo root:  fly deploy
-# (add --remote-only to build on Fly's builder instead of local Docker)
+# This config lives in src/, so deploy FROM THE REPO ROOT and point fly at it —
+# the working directory (build context) must stay the repo root:
+#
+#   fly deploy -c src/fly.toml                  # context = cwd = repo root
+#   fly deploy -c src/fly.toml --remote-only    # build on Fly's builder
+#
+# The dockerfile path below is relative to the build context (repo root).
 
 app = "rylees"
 primary_region = "fra"
