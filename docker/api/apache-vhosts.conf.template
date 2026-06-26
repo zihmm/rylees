@@ -40,13 +40,14 @@
         AllowOverride None
         Require all granted
         Options -Indexes +FollowSymLinks
-    </Directory>
 
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-    RewriteRule ^ /console/index.html [L]
+        # SPA fallback in per-directory context, where %{REQUEST_FILENAME} is the
+        # real filesystem path: existing files (e.g. /assets/*.js) are served as-is
+        # with their correct MIME type; everything else routes to the console entry.
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^ console/index.html [L]
+    </Directory>
 
     ErrorLog ${APACHE_LOG_DIR}/console-error.log
     CustomLog ${APACHE_LOG_DIR}/console-access.log combined
@@ -66,13 +67,12 @@
         AllowOverride None
         Require all granted
         Options -Indexes +FollowSymLinks
-    </Directory>
 
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-    RewriteRule ^ /history/index.html [L]
+        # SPA fallback (per-directory context — see console vhost above).
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^ history/index.html [L]
+    </Directory>
 
     ErrorLog ${APACHE_LOG_DIR}/history-error.log
     CustomLog ${APACHE_LOG_DIR}/history-access.log combined
