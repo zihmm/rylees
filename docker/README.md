@@ -105,23 +105,36 @@ docker compose --profile worker up
 
 ## Production
 
-No database container — the image points at the **external** PostgreSQL via env.
-The API and both SPAs are baked into the image at build time. Provide secrets via
-a root `.env` or the deployment environment (see the prod section of
-`docker/env.example`):
+The API and both SPAs are baked into the image at build time. Prod runs its own
+**local PostgreSQL container** whose port is **not** published to the host, so the
+database is reachable only by `web`/`queue` over the internal Docker network —
+never from the internet. Provide secrets via a root `.env` or the deployment
+environment (see the prod section of `docker/env.example`):
 
 ```bash
 docker compose -f compose.prod.yaml build
 docker compose -f compose.prod.yaml up -d
 ```
 
-Required prod env: `APP_KEY`, `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`,
-`DB_PASSWORD` (plus `MAIL_*`, `OPENAI_API_KEY`). Generate a key with
+Required prod env: `APP_KEY`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` (plus
+`MAIL_*`, `OPENAI_API_KEY`). `DB_HOST` defaults to the `postgres` service — only
+set it to point at an external database instead. Generate a key with
 `docker run --rm --entrypoint php rylees-web:latest artisan key:generate --show`.
 
-**Migrations are a deploy step, not run on container start** — run
-`docker compose -f compose.prod.yaml exec web php artisan migrate --force`
-against the external database as part of your release.
+**First deploy — initialise the database** (the image entrypoint does not
+auto-migrate). Once the stack is up and `postgres` is healthy:
+
+```bash
+docker compose -f compose.prod.yaml exec web php artisan migrate --force
+docker compose -f compose.prod.yaml exec web php artisan db:seed --force   # reference data
+```
+
+On later releases, re-run `migrate --force` as part of your deploy.
+
+> **Why the DB is safe:** the `postgres` service has no `ports:` mapping, so
+> Docker binds it to no host interface. To connect for maintenance, tunnel in
+> from the host instead of opening a port:
+> `docker compose -f compose.prod.yaml exec postgres psql -U "$DB_USERNAME" -d "$DB_DATABASE"`.
 
 **DNS:** production needs a wildcard A record `*.rylees.ai → server IP` (plus
 `api.` and `console.`) so customer-slug subdomains reach the history vhost.

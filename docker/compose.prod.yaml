@@ -1,6 +1,7 @@
-# Prod overlay: baked image, NO database container (external PostgreSQL),
-# secrets supplied via the environment / a root .env. App + frontend are baked
-# into the image at build time.
+# Prod overlay: app + frontend baked into the image, plus a LOCAL PostgreSQL
+# container. The database port is deliberately NOT published to the host, so the
+# DB is reachable only by web/queue over the internal Docker network and is never
+# exposed to the internet. Secrets are supplied via a root .env / the environment.
 
 x-api-env: &api-env
   APP_ENV: production
@@ -8,7 +9,7 @@ x-api-env: &api-env
   APP_URL: ${APP_URL:-https://api.rylees.ai}
   APP_KEY: ${APP_KEY:?APP_KEY is required in production}
   DB_CONNECTION: pgsql
-  DB_HOST: ${DB_HOST:?external DB host is required}
+  DB_HOST: ${DB_HOST:-postgres}
   DB_PORT: ${DB_PORT:-5432}
   DB_DATABASE: ${DB_DATABASE:?}
   DB_USERNAME: ${DB_USERNAME:?}
@@ -26,9 +27,37 @@ services:
     build:
       target: prod
     environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   queue:
     build:
       target: prod
     environment: *api-env
     profiles: ["worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Local production database. No `ports:` mapping → not bound to any host port,
+  # so it is unreachable from outside the Docker network (not exposed to the
+  # internet). Only services on the same compose network can reach it by the
+  # hostname `postgres`. Data persists in a named volume.
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:?}
+      POSTGRES_USER: ${DB_USERNAME:?}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_prod_data:
