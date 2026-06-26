@@ -146,6 +146,11 @@ told where to find it (and which target to build) by the `[build]` block in the
 root `fly.toml`. Without it `fly deploy` fails with "no Dockerfile found". The
 build context is the repo root, governed by the root `.dockerignore`.
 
+> **Fly does not run `docker compose`** — it runs only the web image. The local
+> `postgres` container in `compose.prod.yaml` is for the self-hosted compose
+> deployment below, **not** for Fly. On Fly the database is a separate
+> **Fly Postgres** app (next section).
+
 First-time setup:
 
 ```bash
@@ -154,12 +159,39 @@ fly launch --no-deploy --copy-config   # reuse the committed fly.toml; pick app 
 # App key (clean value — bypass the image entrypoint):
 fly secrets set APP_KEY="$(docker run --rm --entrypoint php rylees-web:latest artisan key:generate --show)"
 
-# External PostgreSQL + mail + OpenAI:
+# Mail + OpenAI:
 fly secrets set \
-  DB_HOST=... DB_DATABASE=... DB_USERNAME=... DB_PASSWORD=... \
   MAIL_MAILER=smtp MAIL_HOST=... MAIL_PORT=... MAIL_USERNAME=... MAIL_PASSWORD=... MAIL_FROM_ADDRESS=... \
   OPENAI_API_KEY=...
 ```
+
+#### Database (Fly Postgres)
+
+The database runs as its own Fly Postgres app on Fly's private **6PN** network
+with no public IP, so it's not reachable from the internet. Provision and attach
+it **before the first deploy** (the deploy's `release_command` migrates against
+it):
+
+```bash
+fly postgres create --name rylees-db --region fra      # same region as the app
+fly postgres attach rylees-db --app rylees             # creates db + user, prints a connection URL
+```
+
+`attach` sets a `DATABASE_URL` secret, but the Laravel pgsql connection reads the
+discrete `DB_*` vars (`config/database.php`), so set those from the printed URL —
+`DB_HOST` is the Fly Postgres app's private hostname:
+
+```bash
+fly secrets set --app rylees \
+  DB_HOST=rylees-db.flycast \
+  DB_DATABASE=rylees \
+  DB_USERNAME=rylees \
+  DB_PASSWORD=<password from the attach output>
+```
+
+> Without `DB_HOST`, Laravel falls back to `127.0.0.1:5432` — the
+> `connection refused` error. `DB_CONNECTION=pgsql` and `DB_PORT=5432` are
+> already in `fly.toml [env]`.
 
 Deploy:
 
@@ -168,9 +200,12 @@ fly deploy                # builds locally; add --remote-only if Docker isn't ru
 ```
 
 `fly.toml` sets `release_command = "php artisan migrate --force"`, so each deploy
-runs migrations against the external DB before the new version goes live.
-Non-secret config (`APP_ENV`, `APP_DOMAIN=rylees.ai`, `APP_URL`, `DB_CONNECTION`,
-`DB_PORT`) is in `[env]`.
+runs migrations against Fly Postgres before the new version goes live. Seed the
+reference data once, after the first successful deploy:
+
+```bash
+fly ssh console --app rylees -C "php /var/www/api/artisan db:seed --force"
+```
 
 Custom domains + TLS for the three vhosts (the Apache config matches on the Host
 header Fly forwards):

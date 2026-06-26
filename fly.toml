@@ -15,12 +15,15 @@ primary_region = "fra"
   build-target = "prod"
 
 # Runs once per release, before the new version goes live — migrate against the
-# external PostgreSQL (the image entrypoint deliberately does not auto-migrate).
+# Fly Postgres database (the image entrypoint deliberately does not auto-migrate).
 [deploy]
   release_command = "php artisan migrate --force"
 
-# Non-secret config. Secrets (APP_KEY, DB_*, MAIL_*, OPENAI_API_KEY) are set with
-# `fly secrets set` and injected as env vars — never commit them here.
+# Non-secret config. The database is a separate Fly Postgres app on the private
+# 6PN network (no public IP) — see docker/README "Database (Fly Postgres)".
+# Secrets (APP_KEY, DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD, MAIL_*,
+# OPENAI_API_KEY) are set with `fly secrets set` — never commit them here.
+# NB: DB_HOST must be set, or Laravel falls back to 127.0.0.1 (connection refused).
 [env]
   APP_ENV = "production"
   APP_DOMAIN = "rylees.ai"
