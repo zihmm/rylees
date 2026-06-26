@@ -1,0 +1,41 @@
+# Fly.io deployment for the Rylees web image (Laravel API + the two built SPAs).
+#
+# The build context is the repo root (so the image can reach src/api and
+# src/frontend); the Dockerfile and its production target live under docker/.
+# Without this [build] block fly looks for ./Dockerfile and fails to find one.
+#
+# Deploy from the repo root:  fly deploy
+# (add --remote-only to build on Fly's builder instead of local Docker)
+
+app = "rylees"
+primary_region = "fra"
+
+[build]
+  dockerfile = "docker/api/Dockerfile"
+  build-target = "prod"
+
+# Runs once per release, before the new version goes live — migrate against the
+# external PostgreSQL (the image entrypoint deliberately does not auto-migrate).
+[deploy]
+  release_command = "php artisan migrate --force"
+
+# Non-secret config. Secrets (APP_KEY, DB_*, MAIL_*, OPENAI_API_KEY) are set with
+# `fly secrets set` and injected as env vars — never commit them here.
+[env]
+  APP_ENV = "production"
+  APP_DOMAIN = "rylees.ai"
+  APP_URL = "https://api.rylees.ai"
+  DB_CONNECTION = "pgsql"
+  DB_PORT = "5432"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"

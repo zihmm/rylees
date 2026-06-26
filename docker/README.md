@@ -126,6 +126,52 @@ against the external database as part of your release.
 **DNS:** production needs a wildcard A record `*.rylees.ai → server IP` (plus
 `api.` and `console.`) so customer-slug subdomains reach the history vhost.
 
+### Deploying to Fly.io
+
+The Dockerfile lives at `docker/api/Dockerfile`, not the repo root, so Fly is
+told where to find it (and which target to build) by the `[build]` block in the
+root `fly.toml`. Without it `fly deploy` fails with "no Dockerfile found". The
+build context is the repo root, governed by the root `.dockerignore`.
+
+First-time setup:
+
+```bash
+fly launch --no-deploy --copy-config   # reuse the committed fly.toml; pick app name/region
+
+# App key (clean value — bypass the image entrypoint):
+fly secrets set APP_KEY="$(docker run --rm --entrypoint php rylees-web:latest artisan key:generate --show)"
+
+# External PostgreSQL + mail + OpenAI:
+fly secrets set \
+  DB_HOST=... DB_DATABASE=... DB_USERNAME=... DB_PASSWORD=... \
+  MAIL_MAILER=smtp MAIL_HOST=... MAIL_PORT=... MAIL_USERNAME=... MAIL_PASSWORD=... MAIL_FROM_ADDRESS=... \
+  OPENAI_API_KEY=...
+```
+
+Deploy:
+
+```bash
+fly deploy                # builds locally; add --remote-only if Docker isn't running
+```
+
+`fly.toml` sets `release_command = "php artisan migrate --force"`, so each deploy
+runs migrations against the external DB before the new version goes live.
+Non-secret config (`APP_ENV`, `APP_DOMAIN=rylees.ai`, `APP_URL`, `DB_CONNECTION`,
+`DB_PORT`) is in `[env]`.
+
+Custom domains + TLS for the three vhosts (the Apache config matches on the Host
+header Fly forwards):
+
+```bash
+fly certs add api.rylees.ai
+fly certs add console.rylees.ai
+fly certs add rylees.ai
+fly certs add "*.rylees.ai"     # wildcard for customer slugs (DNS-01 challenge)
+```
+
+Then point DNS (`fly ips list`) at the app: `A`/`AAAA` for `rylees.ai` and the
+`api.`/`console.` hosts, plus the wildcard `*.rylees.ai`.
+
 ## CLI
 
 The Python CLI (`src/cli`) is intentionally **not** containerised — it runs on a

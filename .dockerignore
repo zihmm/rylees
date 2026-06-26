@@ -1,5 +1,6 @@
-# Build context is the repo root. Keep dependency dirs, secrets and the CLI
-# out of the image so prod builds its own clean dependencies.
+# Build context is the repo root (used by compose and by fly.io). Keep
+# dependency dirs, secrets and the CLI out of the image so prod builds its
+# own clean dependencies. Root location is required by fly.io context upload.
 .git
 **/.git
 **/.DS_Store
