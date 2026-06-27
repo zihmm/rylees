@@ -10,6 +10,15 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class ReleaseHistoryRepository
 {
+    /**
+     * Provision the single release history that backs a project. Invoked by the
+     * Project module through ReleaseHistoryService when a project is created.
+     */
+    public function createForProject(string $projectId): ReleaseHistory
+    {
+        return ReleaseHistory::create(['project_id' => $projectId]);
+    }
+
     public function latestNote(ReleaseHistory $history): ?ReleaseNote
     {
         return $history->releaseNotes()

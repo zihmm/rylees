@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Project\Services;
 
-use App\Modules\Customer\Models\Customer;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Repositories\ProjectRepository;
 use App\Modules\Project\Resources\ProjectDetailResource;
-use App\Modules\ReleaseHistory\Models\ReleaseHistory;
+use App\Modules\ReleaseHistory\Services\ReleaseHistoryService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -16,18 +15,19 @@ final class ProjectService
 {
     public function __construct(
         private readonly ProjectRepository $projects,
+        private readonly ReleaseHistoryService $releaseHistories,
     ) {}
 
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function store(Customer $customer, array $data): array
+    public function store(string $customerId, array $data): array
     {
-        $project = DB::transaction(function () use ($customer, $data): Project
+        $project = DB::transaction(function () use ($customerId, $data): Project
         {
             $project = new Project([
-                'customer_id' => $customer->id,
+                'customer_id' => $customerId,
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
                 'llm_tonality_id' => $data['llm_tonality_id'],
@@ -37,7 +37,9 @@ final class ProjectService
             $project->token = Str::random(64);
             $project->save();
 
-            ReleaseHistory::create(['project_id' => $project->id]);
+            // Provisioning the release history is the ReleaseHistory module's
+            // responsibility — delegate instead of writing its table here.
+            $this->releaseHistories->initialiseForProject($project->id);
 
             return $project;
         });
@@ -49,6 +51,36 @@ final class ProjectService
             'token' => $project->token,
             'created_at' => $project->created_at,
         ];
+    }
+
+    /**
+     * Public lookup used by other modules (e.g. ReleaseHistory) to resolve a
+     * project by its CLI token without touching the projects table directly.
+     */
+    public function findByToken(string $token): ?Project
+    {
+        return Project::query()->where('token', $token)->first();
+    }
+
+    /**
+     * Public lookup used by the ReleaseHistory module to resolve a project from
+     * a customer + project key (public release history URLs).
+     */
+    public function findByCustomerAndKey(string $customerId, string $projectKey): ?Project
+    {
+        return Project::query()
+            ->where('customer_id', $customerId)
+            ->where('key', $projectKey)
+            ->first();
+    }
+
+    /**
+     * Ownership check exposed for other modules: a project belongs to the user
+     * when its customer does.
+     */
+    public function isOwnedBy(Project $project, string $userId): bool
+    {
+        return $project->customer->user_id === $userId;
     }
 
     /**

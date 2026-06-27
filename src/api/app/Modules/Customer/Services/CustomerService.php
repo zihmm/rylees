@@ -21,6 +21,24 @@ final class CustomerService
     ) {}
 
     /**
+     * Public, ownership-scoped lookup for other modules (e.g. Project) that need
+     * to resolve a customer from a route segment without touching its table.
+     */
+    public function findForUser(string $customerId, string $userId): ?Customer
+    {
+        return $this->customers->findOwned($customerId, $userId);
+    }
+
+    /**
+     * Public lookup used by the ReleaseHistory module to resolve a customer from
+     * its organisation slug (public release history URLs).
+     */
+    public function findByOrganisationSlug(string $slug): ?Customer
+    {
+        return $this->customers->findByOrganisationSlug($slug);
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */

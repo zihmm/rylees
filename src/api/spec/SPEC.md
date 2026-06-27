@@ -1868,8 +1868,9 @@ _Related ADRs: ADR-001 (API owns persistence as single source of truth), ADR-005
 _Related ADRs: ADR-005._
 
 - Each module lives under `app/Modules/{ModuleName}/` with its own controllers, models, services, requests, resources, repositories, and `routes.php`.
-- No module directly imports a Model or other internal class from another module.
-- Cross-module communication occurs only through public service-class interfaces; there is no direct access to another module's internal implementation details.
+- A module's application code (controllers, services, repositories, requests, resources) does not import another module's Models or other internal classes; cross-module data is obtained through the owning module's public service interface.
+- The sole sanctioned exception is Eloquent relationship definitions inside Models, which may reference another module's Model to express framework-level associations (`hasMany`, `belongsTo`, `hasOne`).
+- Cross-module communication occurs only through public service-class interfaces; there is no direct access to another module's internal implementation details (controllers, requests, resources, repositories).
 - Database access for a domain is encapsulated within its owning module (via that module's repositories/services); no module reads or writes another module's tables directly.
 - Shared functionality lives in dedicated shared components (e.g. `app/Models/Concerns`) rather than being duplicated across modules.
 

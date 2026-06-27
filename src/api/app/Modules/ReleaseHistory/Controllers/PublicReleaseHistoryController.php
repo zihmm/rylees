@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\ReleaseHistory\Controllers;
 
-use App\Models\Organisation;
 use App\Modules\AI\Services\TranslationService;
-use App\Modules\Customer\Models\Customer;
-use App\Modules\Project\Models\Project;
+use App\Modules\Customer\Services\CustomerService;
+use App\Modules\Project\Services\ProjectService;
 use App\Modules\ReleaseHistory\Repositories\ReleaseHistoryRepository;
 use App\Modules\ReleaseHistory\Resources\ReleaseNoteResource;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -18,6 +18,8 @@ final class PublicReleaseHistoryController
 {
     public function __construct(
         private readonly ReleaseHistoryRepository $repository,
+        private readonly CustomerService $customers,
+        private readonly ProjectService $projects,
     ) {}
 
     public function index(Request $request, string $customerSlug, string $projectKey): JsonResponse
@@ -69,22 +71,27 @@ final class PublicReleaseHistoryController
         ]);
     }
 
-    private function resolveProject(string $customerSlug, string $projectKey): Project
+    /**
+     * Resolve the public {customerSlug}/{projectKey} pair through the owning
+     * modules' service interfaces. Returns the Project model (read-only here);
+     * a missing customer or project surfaces as 404 not_found.
+     */
+    private function resolveProject(string $customerSlug, string $projectKey): object
     {
-        $organisation = Organisation::query()
-            ->where('slug', $customerSlug)
-            ->whereNull('deleted_at')
-            ->firstOrFail();
+        $customer = $this->customers->findByOrganisationSlug($customerSlug);
 
-        $customer = Customer::query()
-            ->where('organisation_id', $organisation->id)
-            ->whereNull('deleted_at')
-            ->firstOrFail();
+        if ($customer === null)
+        {
+            throw new ModelNotFoundException;
+        }
 
-        return Project::query()
-            ->where('customer_id', $customer->id)
-            ->where('key', $projectKey)
-            ->whereNull('deleted_at')
-            ->firstOrFail();
+        $project = $this->projects->findByCustomerAndKey($customer->id, $projectKey);
+
+        if ($project === null)
+        {
+            throw new ModelNotFoundException;
+        }
+
+        return $project;
     }
 }

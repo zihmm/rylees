@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Project\Repositories;
 
-use App\Modules\Customer\Models\Customer;
 use App\Modules\Project\Models\Project;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,10 +13,10 @@ final class ProjectRepository
     /**
      * @return Collection<int, Project>
      */
-    public function forCustomer(Customer $customer): Collection
+    public function forCustomer(string $customerId): Collection
     {
         return Project::query()
-            ->where('customer_id', $customer->id)
+            ->where('customer_id', $customerId)
             ->with(['tonality', 'temperature'])
             ->get();
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ReleaseHistory\Services;
 
-use App\Modules\Project\Models\Project;
+use App\Modules\ReleaseHistory\Models\ReleaseHistory;
 use App\Modules\ReleaseHistory\Models\ReleaseNote;
 use App\Modules\ReleaseHistory\Repositories\ReleaseHistoryRepository;
 
@@ -15,13 +15,21 @@ final class ReleaseHistoryService
     ) {}
 
     /**
+     * Create the empty release history that backs a freshly created project.
+     * Public entry point for the Project module (keeps release_histories writes
+     * inside the owning module).
+     */
+    public function initialiseForProject(string $projectId): void
+    {
+        $this->repository->createForProject($projectId);
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function publish(Project $project, array $data, string $authorId): array
+    public function publish(ReleaseHistory $history, array $data, string $authorId): array
     {
-        $history = $project->releaseHistory;
-
         // Determine the version to build on: start from the most recent note's
         // version, or from 0.0.0 when this is the project's first release.
         $latest = $this->repository->latestNote($history);

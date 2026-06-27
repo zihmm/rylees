@@ -7,6 +7,7 @@ namespace App\Modules\Customer\Repositories;
 use App\Models\User;
 use App\Modules\Customer\Models\Customer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 final class CustomerRepository
 {
@@ -25,6 +26,29 @@ final class CustomerRepository
             ->where('user_id', $user->id)
             ->with(['organisation', 'mainContact', 'industry', 'contacts', 'projects'])
             ->find($id);
+    }
+
+    /**
+     * Lean ownership-scoped lookup (no eager loads) for other modules that only
+     * need to verify a customer exists and belongs to the given user.
+     */
+    public function findOwned(string $customerId, string $userId): ?Customer
+    {
+        return Customer::query()
+            ->where('id', $customerId)
+            ->where('user_id', $userId)
+            ->first();
+    }
+
+    /**
+     * Resolve a customer by its organisation slug (public release history).
+     * The relation constraint excludes soft-deleted organisations.
+     */
+    public function findByOrganisationSlug(string $slug): ?Customer
+    {
+        return Customer::query()
+            ->whereHas('organisation', static fn (Builder $query): Builder => $query->where('slug', $slug))
+            ->first();
     }
 
     /**

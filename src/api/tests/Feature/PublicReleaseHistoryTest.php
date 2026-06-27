@@ -114,3 +114,42 @@ test('test_translate_returns_translated_bodies', function (): void
     expect($response->json('items.1.version'))->toBe('1.0.0');
     expect($response->json('items.1.body'))->toBe('FR: Older release.');
 });
+
+test('test_translate_payload_contains_only_id_and_body_no_secrets', function (): void
+{
+    // AC-API-16: only release-note id and body are handed to the LLM layer —
+    // no project token, api_key, or other secret is ever forwarded in a prompt.
+    [$organisation, $customer, $project, $history, $newest] = makePublicReleaseHistorySetup();
+
+    $fake = new class
+    {
+        /** @var list<array<string, mixed>> */
+        public array $notes = [];
+
+        public function translate(array $notes, string $language): array
+        {
+            $this->notes = $notes;
+
+            return array_map(
+                fn (array $note): array => ['id' => $note['id'], 'body' => $note['body']],
+                $notes
+            );
+        }
+    };
+
+    $this->app->instance(TranslationService::class, $fake);
+
+    $this->getJson("/v1/public/release-history/{$organisation->slug}/{$project->key}/translate?language=fr")
+        ->assertStatus(200);
+
+    expect($fake->notes)->not->toBeEmpty();
+
+    foreach ($fake->notes as $note)
+    {
+        // Each note carries exactly two keys and nothing secret.
+        expect(array_keys($note))->toEqualCanonicalizing(['id', 'body']);
+    }
+
+    // The project token never reaches the LLM payload.
+    expect(json_encode($fake->notes))->not->toContain($project->token);
+});

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Project\Controllers;
 
-use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Services\CustomerService;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Repositories\ProjectRepository;
 use App\Modules\Project\Requests\StoreProjectRequest;
@@ -22,6 +22,7 @@ final class ProjectController
     public function __construct(
         private readonly ProjectService $service,
         private readonly ProjectRepository $repository,
+        private readonly CustomerService $customers,
     ) {}
 
     public function all(Request $request): JsonResponse
@@ -33,38 +34,40 @@ final class ProjectController
         ]);
     }
 
-    public function index(Request $request, Customer $customer): JsonResponse
+    public function index(Request $request, string $customer): JsonResponse
     {
-        $this->authorizeCustomer($customer);
+        $owned = $this->resolveOwnedCustomer($customer);
 
-        $projects = $this->repository->forCustomer($customer);
+        $projects = $this->repository->forCustomer($owned->id);
 
         return response()->json([
             'data' => ProjectListResource::collection($projects)->resolve(),
         ]);
     }
 
-    public function store(StoreProjectRequest $request, Customer $customer): JsonResponse
+    public function store(StoreProjectRequest $request, string $customer): JsonResponse
     {
-        $this->authorizeCustomer($customer);
+        $owned = $this->resolveOwnedCustomer($customer);
 
-        $result = $this->service->store($customer, $request->validated());
+        $result = $this->service->store($owned->id, $request->validated());
 
         return response()->json($result, 201);
     }
 
-    public function show(Request $request, Customer $customer, Project $project): JsonResponse
+    public function show(Request $request, string $customer, Project $project): JsonResponse
     {
-        $this->authorizeProject($customer, $project);
+        $owned = $this->resolveOwnedCustomer($customer);
+        $this->ensureProjectBelongsTo($project, $owned->id);
 
         $project = $this->repository->loadDetail($project);
 
         return response()->json((new ProjectDetailResource($project))->resolve());
     }
 
-    public function update(UpdateProjectRequest $request, Customer $customer, Project $project): JsonResponse
+    public function update(UpdateProjectRequest $request, string $customer, Project $project): JsonResponse
     {
-        $this->authorizeProject($customer, $project);
+        $owned = $this->resolveOwnedCustomer($customer);
+        $this->ensureProjectBelongsTo($project, $owned->id);
 
         $result = $this->service->update($project, $request->validated());
 
@@ -73,9 +76,14 @@ final class ProjectController
 
     public function showByToken(Request $request, string $projectToken): JsonResponse
     {
-        $project = Project::query()->where('token', $projectToken)->firstOrFail();
+        $project = $this->service->findByToken($projectToken);
 
-        if ($project->customer->user_id !== auth()->id())
+        if ($project === null)
+        {
+            throw new ModelNotFoundException;
+        }
+
+        if (! $this->service->isOwnedBy($project, (string) auth()->id()))
         {
             return response()->json(['message' => 'Forbidden.', 'code' => 'forbidden'], 403);
         }
@@ -85,19 +93,26 @@ final class ProjectController
         return response()->json((new ProjectDetailResource($project))->resolve());
     }
 
-    private function authorizeCustomer(Customer $customer): void
+    /**
+     * Resolve the {customer} route segment through the Customer module's public
+     * service, scoped to the authenticated developer. A customer that does not
+     * exist or is not owned surfaces as 404 not_found (no existence leak).
+     */
+    private function resolveOwnedCustomer(string $customerId): object
     {
-        if ($customer->user_id !== auth()->id())
+        $customer = $this->customers->findForUser($customerId, (string) auth()->id());
+
+        if ($customer === null)
         {
             throw new ModelNotFoundException;
         }
+
+        return $customer;
     }
 
-    private function authorizeProject(Customer $customer, Project $project): void
+    private function ensureProjectBelongsTo(Project $project, string $customerId): void
     {
-        $this->authorizeCustomer($customer);
-
-        if ($project->customer_id !== $customer->id)
+        if ($project->customer_id !== $customerId)
         {
             throw new ModelNotFoundException;
         }
