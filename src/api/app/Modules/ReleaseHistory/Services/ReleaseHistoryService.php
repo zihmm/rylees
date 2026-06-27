@@ -22,6 +22,8 @@ final class ReleaseHistoryService
     {
         $history = $project->releaseHistory;
 
+        // Determine the version to build on: start from the most recent note's
+        // version, or from 0.0.0 when this is the project's first release.
         $latest = $this->repository->latestNote($history);
 
         if ($latest === null)
@@ -36,6 +38,9 @@ final class ReleaseHistoryService
             $patch = $latest->version_patch;
         }
 
+        // Apply the requested semantic-version bump. Incrementing a higher
+        // component resets every lower one (e.g. minor bump zeroes the patch),
+        // so 1.4.2 becomes 2.0.0 / 1.5.0 / 1.4.3 for major / minor / patch.
         switch ($data['versionBump'])
         {
             case 'major':
