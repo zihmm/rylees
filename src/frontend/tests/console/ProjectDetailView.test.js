@@ -3,6 +3,7 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 import { createPinia, setActivePinia } from 'pinia';
 import ProjectDetailView from '../../src/apps/console/views/ProjectDetailView.vue';
 import * as api from '../../src/shared/api.js';
+import { relative } from '../../src/shared/date.js';
 
 jest.mock('../../src/shared/api.js');
 
@@ -90,20 +91,21 @@ describe('ProjectDetailView', () => {
     expect(writeText).toHaveBeenCalledWith('ryl_secret_token_123');
   });
 
-  test('release notes render version, absolute date and body in the sidebar', async () => {
+  test('release notes render version, relative date and body in the sidebar', async () => {
     const { wrapper } = await mountView();
     const text = wrapper.text();
     expect(text).toContain('Latest release notes body with enough detail');
     expect(text).toContain('v3.5.0');
-    expect(text).toContain('01. Juni 2026');
+    expect(text).toContain(relative(releaseHistory.items[0].publishedAt));
   });
 
-  test('release history table renders the first 100 body characters', async () => {
+  test('release notes render one list entry per item with its version pill', async () => {
     const { wrapper } = await mountView();
-    const tableText = wrapper.find('table').text();
-    expect(tableText).toContain('Version');
-    expect(tableText).toContain('Published');
-    expect(tableText).toContain('Summary');
-    expect(tableText).toContain(releaseHistory.items[0].body.slice(0, 100) + '...');
+    // The legacy summary table was replaced by a card list in the sidebar panel.
+    expect(wrapper.find('table').exists()).toBe(false);
+    const entries = wrapper.findAll('li');
+    expect(entries.length).toBe(releaseHistory.items.length);
+    expect(entries[0].text()).toContain('v3.5.0');
+    expect(entries[0].text()).toContain(releaseHistory.items[0].body);
   });
 });

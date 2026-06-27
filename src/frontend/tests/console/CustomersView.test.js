@@ -11,7 +11,7 @@ const Blank = { template: '<div />' };
 
 const ConsoleLayoutStub = {
   name: 'ConsoleLayout',
-  template: '<div><slot /><slot name="sidebar" /></div>',
+  template: '<div><slot name="header-actions" /><slot /><slot name="sidebar" /></div>',
 };
 
 function makeRouter() {
@@ -32,8 +32,7 @@ function pageFixture(page) {
         {
           id: 'c1',
           organisation: { name: 'Acme Ltd', city: 'Zurich' },
-          industry: { name: 'Manufacturing' },
-          description: 'A great company',
+          main_contact: { firstname: 'Jane', lastname: 'Doe' },
           projects_count: 4,
           updated_at: '2026-06-01T10:00:00Z',
         },
@@ -61,12 +60,11 @@ beforeEach(() => {
 });
 
 describe('CustomersView', () => {
-  test('renders org card with name, industry and description', async () => {
+  test('renders org card with name and main contact', async () => {
     const { wrapper } = await mountView();
     const text = wrapper.text();
     expect(text).toContain('Acme Ltd');
-    expect(text).toContain('Manufacturing');
-    expect(text).toContain('A great company');
+    expect(text).toContain('Jane Doe');
   });
 
   test('card links to the customer detail route', async () => {
@@ -75,12 +73,12 @@ describe('CustomersView', () => {
     expect(links.some((h) => h && h.includes('/customers/c1'))).toBe(true);
   });
 
-  test('"New Organisation" action navigates to the create route', async () => {
+  test('"New Customer" action navigates to the create route', async () => {
     const { wrapper, router } = await mountView();
     const push = jest.spyOn(router, 'push');
     const btn = wrapper
       .findAll('button')
-      .find((b) => b.text().includes('New Organisation'));
+      .find((b) => b.text().includes('New Customer'));
     expect(btn).toBeTruthy();
     await btn.trigger('click');
     expect(push).toHaveBeenCalledWith('/customers/new');

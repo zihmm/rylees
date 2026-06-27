@@ -42,6 +42,7 @@ function makeRouter() {
       { path: '/customers/:id/edit', name: 'customer-edit', component: Blank },
       { path: '/customers/:customerId/projects/new', name: 'project-create', component: Blank },
       { path: '/customers/:customerId/projects/:id', name: 'project-detail', component: Blank },
+      { path: '/customers/:customerId/projects/:id/edit', name: 'project-edit', component: Blank },
     ],
   });
 }

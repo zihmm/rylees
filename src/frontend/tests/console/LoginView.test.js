@@ -15,6 +15,7 @@ function makeRouter() {
       { path: '/login', name: 'login', component: LoginView },
       { path: '/dashboard', name: 'dashboard', component: Blank },
       { path: '/register', name: 'register', component: Blank },
+      { path: '/forgot-password', name: 'forgot-password', component: Blank },
     ],
   });
 }
@@ -41,14 +42,14 @@ describe('LoginView', () => {
     expect(wrapper.find('input[type="password"]').exists()).toBe(true);
   });
 
-  test('401 shows "Invalid email or password."', async () => {
+  test('401 shows the invalid-credentials message', async () => {
     api.login.mockRejectedValue({ response: { status: 401 } });
     const { wrapper } = await mountView();
     await wrapper.find('input[type="email"]').setValue('a@b.com');
     await wrapper.find('input[type="password"]').setValue('bad');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
-    expect(wrapper.text()).toContain('Invalid email or password.');
+    expect(wrapper.text()).toContain('The email or password you entered is incorrect.');
   });
 
   test('403 shows activation message', async () => {
@@ -58,7 +59,7 @@ describe('LoginView', () => {
     await wrapper.find('input[type="password"]').setValue('pw');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
-    expect(wrapper.text()).toContain('Account not yet activated. Please check your email.');
+    expect(wrapper.text()).toContain('Please activate your account using the link we emailed you.');
   });
 
   test('success pushes router to /dashboard', async () => {

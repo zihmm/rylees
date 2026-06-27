@@ -49,7 +49,7 @@ describe('RegisterView', () => {
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
     expect(wrapper.text()).toContain(
-      'Account created. Please check your email to activate your account.'
+      'Your account was created. Please activate it with the activation link.'
     );
     // The form is replaced by the success block.
     expect(wrapper.find('form').exists()).toBe(false);
