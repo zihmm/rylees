@@ -20,10 +20,22 @@ final class LlmTemperatureTypeSeeder extends Seeder
 
         foreach ($temperatures as $item)
         {
-            DB::table('llm_temperature_types')->updateOrInsert(
-                ['name' => $item['name']],
-                ['id' => (string) Str::uuid(), 'name' => $item['name'], 'value' => $item['value']]
-            );
+            $existing = DB::table('llm_temperature_types')->where('name', $item['name'])->first();
+
+            if ($existing === null)
+            {
+                DB::table('llm_temperature_types')->insert([
+                    'id' => (string) Str::uuid(),
+                    'name' => $item['name'],
+                    'value' => $item['value'],
+                ]);
+
+                continue;
+            }
+
+            DB::table('llm_temperature_types')
+                ->where('id', $existing->id)
+                ->update(['value' => $item['value']]);
         }
     }
 }

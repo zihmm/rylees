@@ -16,10 +16,13 @@ final class LlmTonalityTypeSeeder extends Seeder
 
         foreach ($tonalities as $name)
         {
-            DB::table('llm_tonality_types')->updateOrInsert(
-                ['name' => $name],
-                ['id' => (string) Str::uuid(), 'name' => $name]
-            );
+            if (DB::table('llm_tonality_types')->where('name', $name)->doesntExist())
+            {
+                DB::table('llm_tonality_types')->insert([
+                    'id' => (string) Str::uuid(),
+                    'name' => $name,
+                ]);
+            }
         }
     }
 }

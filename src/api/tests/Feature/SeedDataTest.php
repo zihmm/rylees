@@ -43,3 +43,21 @@ it('seeds idempotently without creating duplicate rows', function (): void
     expect(DB::table('llm_tonality_types')->count())->toBe(4);
     expect(DB::table('llm_temperature_types')->count())->toBe(3);
 });
+
+it('keeps lookup primary keys stable across re-seeds', function (): void
+{
+    $this->seed(DatabaseSeeder::class);
+
+    $before = [
+        'industry_types' => DB::table('industry_types')->pluck('id', 'name'),
+        'llm_tonality_types' => DB::table('llm_tonality_types')->pluck('id', 'name'),
+        'llm_temperature_types' => DB::table('llm_temperature_types')->pluck('id', 'name'),
+    ];
+
+    $this->seed(DatabaseSeeder::class);
+
+    foreach ($before as $table => $ids)
+    {
+        expect(DB::table($table)->pluck('id', 'name')->toArray())->toBe($ids->toArray());
+    }
+});

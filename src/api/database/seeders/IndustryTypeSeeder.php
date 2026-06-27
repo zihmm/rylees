@@ -20,10 +20,13 @@ final class IndustryTypeSeeder extends Seeder
 
         foreach ($industries as $name)
         {
-            DB::table('industry_types')->updateOrInsert(
-                ['name' => $name],
-                ['id' => (string) Str::uuid(), 'name' => $name]
-            );
+            if (DB::table('industry_types')->where('name', $name)->doesntExist())
+            {
+                DB::table('industry_types')->insert([
+                    'id' => (string) Str::uuid(),
+                    'name' => $name,
+                ]);
+            }
         }
     }
 }
