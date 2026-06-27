@@ -1837,7 +1837,17 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ## 12. Acceptance Criteria
 
+Every acceptance criterion is traceable to one or more Architecture Decision Records under `docs/architecture/adr/`. The `Related ADRs` annotation on each criterion makes the link explicit, so that each architectural decision is verifiable through at least one acceptance criterion and no criterion contradicts an accepted decision:
+
+- **ADR-001** — System decomposition into CLI Tool, Web UI & Backend API. The Backend API is the single source of truth for all domain operations; clients never access the database directly.
+- **ADR-002** — A dedicated CLI Tool performs release-note generation. Git analysis and LLM generation live in the CLI, never in the API.
+- **ADR-003** — An LLM is used for release-note generation, abstracted behind a dedicated client layer; secrets are never included in prompts.
+- **ADR-004** — Human-in-the-loop: explicit human review and approval precede publication; no automated publication mechanism exists.
+- **ADR-005** — The Backend API is implemented as a modular monolith with explicitly enforced module boundaries.
+
 ### AC-API-01 — Framework and routing
+
+_Related ADRs: ADR-001, ADR-005._
 
 - All routes are prefixed `/v1`.
 - Every response carries `Content-Type: application/json`.
@@ -1846,6 +1856,8 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ### AC-API-02 — Database schema
 
+_Related ADRs: ADR-001 (API owns persistence as single source of truth), ADR-005._
+
 - `php artisan migrate` runs without errors on a clean PostgreSQL 16 database.
 - All tables except `*_types` lookup tables have `created_at`, `updated_at`, and `deleted_at` columns.
 - Every foreign-key column carries the index specified in section 6.
@@ -1853,10 +1865,17 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ### AC-API-03 — Modular monolith structure
 
+_Related ADRs: ADR-005._
+
 - Each module lives under `app/Modules/{ModuleName}/` with its own controllers, models, services, requests, resources, repositories, and `routes.php`.
-- No module directly imports a Model from another module.
+- No module directly imports a Model or other internal class from another module.
+- Cross-module communication occurs only through public service-class interfaces; there is no direct access to another module's internal implementation details.
+- Database access for a domain is encapsulated within its owning module (via that module's repositories/services); no module reads or writes another module's tables directly.
+- Shared functionality lives in dedicated shared components (e.g. `app/Models/Concerns`) rather than being duplicated across modules.
 
 ### AC-API-04 — Registration and email activation
+
+_Related ADRs: ADR-001 (the API owns authentication for all clients)._
 
 - `POST /users/register` with valid data returns `201` and creates `organisations`, `users`, and `user_profiles` rows.
 - The new user has `is_active = false` and a non-null `activation_token`.
@@ -1866,6 +1885,8 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ### AC-API-05 — Authentication
 
+_Related ADRs: ADR-001, ADR-002 (CLI authenticates against the API via its `api_key`)._
+
 - `POST /auth/login` with correct credentials and `is_active = true` returns `200` with a Bearer token and `expires_in: 3600`.
 - `POST /auth/login` with `is_active = false` returns `403 inactive_user`.
 - `POST /auth/login` with wrong credentials returns `401 unauthenticated`.
@@ -1873,6 +1894,8 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 - CLI requests via `Authorization: Bearer <api_key>` resolve the owning user correctly.
 
 ### AC-API-05a — Forgot / reset password
+
+_Related ADRs: ADR-001 (the API owns authentication for all clients)._
 
 - `POST /auth/forgot-password` with a known email returns `200`, stores a `password_reset_token` with a future `password_reset_expires_at`, and sends `PasswordResetMail`.
 - `POST /auth/forgot-password` with an unknown email returns the same `200` message and sends no email (no account enumeration).
@@ -1882,16 +1905,22 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ### AC-API-06 — Authorization scoping
 
+_Related ADRs: ADR-001 (the API enforces authorization centrally), ADR-005._
+
 - A developer cannot read, update, or delete customers or projects belonging to another developer; such requests return `404 not_found`.
 - Public release history endpoints return data without any `Authorization` header.
 
 ### AC-API-07 — Standard error shape
+
+_Related ADRs: ADR-005 (consistent REST contract across all modules)._
 
 - Every `4xx` response body matches `{ "message": "...", "code": "..." }`.
 - Non-existent resources return `404`, not `500`.
 - Invalid request payloads return `422 validation_error`.
 
 ### AC-API-08 — Customer and project management
+
+_Related ADRs: ADR-001 (the API is the single source of truth for domain data), ADR-005._
 
 - `POST /customers` creates an `organisations` row and a `customers` row; optionally creates a `customer_contacts` row and sets `main_contact_id`.
 - `POST /customers/{customerId}/projects` creates a `projects` row with a generated `key` (slug, unique per customer) and a 64-character random `token`, and automatically creates one `release_histories` row.
@@ -1901,30 +1930,69 @@ Framework: Pest 3 with `pest-plugin-laravel`. Use `RefreshDatabase` trait in all
 
 ### AC-API-09 — Security field exposure
 
+_Related ADRs: ADR-001, ADR-003 (no secrets are forwarded to the LLM — see AC-API-16)._
+
 - `api_key` does not appear in any list-level response; it is present only in `GET /users/me`.
 - `projects.token` does not appear in list responses (the global list via `GET /customers`, nor the project overview via `GET /projects`); it is present in `GET /customers/{id}/projects`, `GET /customers/{id}/projects/{id}`, and the `POST` create response.
 - Passwords are stored as bcrypt hashes; plaintext never appears in any response or log.
+- No secret value (`api_key`, `projects.token`, password, activation/reset token) is ever included in a payload sent to the LLM (cross-ref AC-API-16).
 
 ### AC-API-10 — CLI publish endpoint
+
+_Related ADRs: ADR-002 (the CLI generates the body; the API only persists it), ADR-004 (publication is an explicit, human-reviewed developer action — see AC-API-17)._
 
 - `POST /projects/{projectToken}/release-history` with `versionBump: "minor"` and no prior release notes creates a record with `version_major=0`, `version_minor=1`, `version_patch=0` and returns `201` with `{ "status": "published", "version": "0.1.0" }`.
 - Subsequent bumps increment the correct component and reset lower components.
 - `type = "commits"` populates `commithash_start` and `commithash_end`; `tag_start` and `tag_end` remain null, and vice versa.
+- The endpoint persists the caller-supplied `body` verbatim; it performs no Git analysis and invokes no LLM to produce or alter the body (that work belongs to the CLI — see AC-API-15).
 
 ### AC-API-11 — Public release history
+
+_Related ADRs: ADR-001, ADR-004 (only explicitly published notes are publicly readable — see AC-API-17)._
 
 - `GET /public/release-history/{customerSlug}/{projectKey}` returns release notes ordered newest first without authentication.
 - Returns `404` when the slug/key combination does not resolve.
 
 ### AC-API-12 — Translation
 
+_Related ADRs: ADR-003 (LLM access is encapsulated behind the AI module's client layer — see AC-API-16)._
+
 - `GET /public/release-history/{customerSlug}/{projectKey}/translate?language=fr` calls the AI module and returns translated bodies.
 - Missing or invalid `language` returns `422 validation_error`.
+- Translation is the API's only LLM-backed operation, and it is reached exclusively through the AI module's `TranslationService`; no controller invokes an LLM directly.
 
 ### AC-API-13 — Reference data
+
+_Related ADRs: ADR-005._
 
 - `GET /ref/industries`, `GET /ref/llm-tonalities`, `GET /ref/llm-temperatures` return all seeded records without authentication.
 
 ### AC-API-14 — Seed data
 
+_Related ADRs: ADR-005._
+
 - `php artisan db:seed` populates `llm_tonality_types` (4 records), `llm_temperature_types` (3 records), and `industry_types` (13 records) without errors and is idempotent on re-run.
+
+### AC-API-15 — Component boundaries and single source of truth
+
+_Related ADRs: ADR-001, ADR-002._
+
+- The Backend API exposes all domain functionality exclusively over its documented `/v1` HTTP interface and is the single source of truth for customers, projects, users, and release notes. No client (CLI Tool or Developer Console) is granted direct database access.
+- The API performs no Git repository analysis and exposes no endpoint that generates a release-note body. Git diff analysis, prompt building, and LLM-based generation are responsibilities of the CLI Tool alone.
+- The release-note `body` accepted by `POST /projects/{projectToken}/release-history` is treated as client-supplied content and persisted unchanged; the API neither produces nor rewrites it (cross-ref AC-API-10).
+
+### AC-API-16 — LLM usage scope and abstraction
+
+_Related ADRs: ADR-003._
+
+- Translation (`GET /public/release-history/{customerSlug}/{projectKey}/translate`) is the only LLM-backed operation in the API; no other endpoint invokes an LLM.
+- All LLM access is encapsulated in the AI module's `TranslationService` (the dedicated client layer), so the model or provider can be swapped without changes outside that module.
+- Payloads sent to the LLM contain only release-note `id` and `body` values. No credentials, `api_key`, `projects.token`, password, or other secret is ever included in a prompt (cross-ref AC-API-09).
+
+### AC-API-17 — Human-in-the-loop publication
+
+_Related ADRs: ADR-004._
+
+- A release note enters the system only through an explicit, authenticated developer action — `POST /projects/{projectToken}/release-history` carrying a human-reviewed `body` (validated `required|string`). The API never generates and publishes a note autonomously.
+- No endpoint generates and publishes a release note in a single unattended step; the reviewed `body` must always be provided by the caller.
+- Publication is gated by ownership: the publishing developer must own the project (its customer's `user_id` must match the authenticated developer), otherwise the request returns `403 forbidden`. Only after this explicit submission does the note become visible on the public release-history endpoints (cross-ref AC-API-11).
