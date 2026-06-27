@@ -94,7 +94,16 @@ Do not implement any issue yourself in the orchestrator — only coordinate and 
 > 7. **Hand off to review.** Move the issue to **Review** with `mcp__linear__save_issue`
 >    (`id: <IDENTIFIER>`, `state: "41308466-d129-4cb5-8b45-fd42488b5f46"`).
 >
-> 8. **Report.** Return a short summary: issue id, branch name, commit hash, what you changed,
+> 8. **Clean up the worktree.** Now that the commit exists on the branch, the worktree is no
+>    longer needed — remove it so it doesn't pile up. First `cd` back to the repo root
+>    (`/Users/marc/Entwicklung/Projekte/Rylees`), then run
+>    `git worktree remove ../rylees-worktrees/<identifier-lowercased>`.
+>    Do **not** delete the branch `board-runners/<identifier-lowercased>` — it holds the commit
+>    the reviewer needs; `git worktree remove` leaves the branch intact. Only remove the worktree
+>    if the commit succeeded and the issue reached **Review**; if the issue is blocked and left in
+>    **Working On**, keep the worktree so the work isn't lost.
+>
+> 9. **Report.** Return a short summary: issue id, branch name, commit hash, what you changed,
 >    and confirmation that each Definition-of-Done item is met.
 
 ## Step 4 — Collect and report
