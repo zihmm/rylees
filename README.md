@@ -67,7 +67,7 @@ You now have everything the CLI needs: your `API key` and the project's `token`.
 The CLI requires **Python 3.12+** and is installed via pip:
 
 ```bash
-pip install rylees
+pipx install rylees
 ```
 
 After installation the `rylees` executable is available on your `$PATH`:
