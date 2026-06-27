@@ -10,8 +10,40 @@ const props = defineProps({
 });
 
 const copied = ref(false);
-function copy() {
-  navigator.clipboard?.writeText(props.token);
+
+async function writeToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to the legacy fallback below (e.g. insecure context
+      // or permission denied).
+    }
+  }
+
+  // Fallback for non-secure contexts or browsers without the async
+  // Clipboard API: use a temporary textarea + execCommand('copy').
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+async function copy() {
+  if (!props.token) return;
+  const ok = await writeToClipboard(props.token);
+  if (!ok) return;
   copied.value = true;
   setTimeout(() => (copied.value = false), 1500);
 }
