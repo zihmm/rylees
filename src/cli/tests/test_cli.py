@@ -33,6 +33,9 @@ class FakeGitConnector:
     def __init__(self, *args, **kwargs):
         pass
 
+    def current_branch(self):
+        return "main"
+
     def get_diff(self, start_ref, end_ref, ref_type):
         return [], "diff --git a/x.py b/x.py\n@@ -1 +1 @@\n+change\n"
 
@@ -61,7 +64,9 @@ def patched_flow(monkeypatch):
     _captured.clear()
     monkeypatch.setattr(
         "app.config.Config.load",
-        classmethod(lambda cls: Config("api", "proj", "sk", "GPT-5.4", None)),
+        classmethod(
+            lambda cls: Config("api", "proj", "sk", "https://api.test", "GPT-5.4", None)
+        ),
     )
     monkeypatch.setattr("app.api_client.ApiClient", FakeApiClient)
     monkeypatch.setattr("app.git_connector.GitConnector", FakeGitConnector)
