@@ -197,3 +197,9 @@ Full reference — production builds, the optional queue worker, and DNS notes �
 ## AI Disclaimer
 
 This project was built under heavy AI-assisted engineering. Architecture and technical specification were carefully crafted by the author, using AI as a thinking partner to challenge assumptions and sharpen decisions. The spec-driven implementation was largely written and orchestrated by AI.
+
+## License
+
+This project is licensed under the **MIT License** — you are free to use, modify, and distribute it, provided the original copyright notice and attribution to the author are retained. See the [LICENSE](LICENSE) file for details.
+
+© 2026 Marc Zimmerli
