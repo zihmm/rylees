@@ -70,8 +70,8 @@ Do not implement any issue yourself in the orchestrator — only coordinate and 
 >
 > 3. **Create an isolated worktree.** Work in a dedicated git worktree so parallel agents never
 >    collide. From the repo root (`/Users/marc/Entwicklung/Projekte/Rylees`):
->    - Branch name: `do/<identifier-lowercased>` (e.g. `do/pri-42`).
->    - Create it: `git worktree add ../rylees-worktrees/<identifier-lowercased> -b do/<identifier-lowercased> main`
+>    - Branch name: `board-runners/<identifier-lowercased>` (e.g. `board-runners/pri-42`).
+>    - Create it: `git worktree add ../rylees-worktrees/<identifier-lowercased> -b board-runners/<identifier-lowercased> main`
 >    - `cd` into that worktree and do all of your work there.
 >
 > 4. **Implement.** Build the change required to satisfy every item in the Definition of Done.
