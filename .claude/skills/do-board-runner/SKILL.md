@@ -82,9 +82,11 @@ Do not implement any issue yourself in the orchestrator — only coordinate and 
 >    in **Working On**, add a Linear comment explaining the blocker, and report back instead of
 >    faking completion.
 >
-> 5. **Commit.** Stage and commit your work in the worktree with a clear message that references
->    the issue, e.g. `git commit -m "<IDENTIFIER>: <short summary>"`. Do NOT push and do NOT open
->    a PR. Then capture the hash: `git rev-parse HEAD`.
+> 5. **Commit and push.** Stage and commit your work in the worktree with a clear message that
+>    references the issue, e.g. `git commit -m "<IDENTIFIER>: <short summary>"`. Then capture the
+>    hash: `git rev-parse HEAD`. Push the branch to the remote so Codex can open a PR from it:
+>    `git push -u origin board-runners/<identifier-lowercased>`. Do NOT open a PR yourself —
+>    Codex does that.
 >
 > 6. **Record the commit and hand off to Codex.** Add a comment to the issue with
 >    `mcp__linear__save_comment` (`issueId: <IDENTIFIER>`). The comment body must contain, in
@@ -117,8 +119,9 @@ could not be completed and why.
 
 ## Rules
 
-- Never auto-push or auto-open PRs. The deliverable is a local commit on a worktree branch plus
-  the board moved to **Review** — a human reviews from there.
+- Push the worktree branch to `origin` before moving the issue to **Review**, but never auto-open
+  PRs — Codex opens the PR. The deliverable is the pushed `board-runners/<id>` branch plus the
+  board moved to **Review**; a human reviews from there.
 - One worktree and one branch per issue; never let two agents share a worktree.
 - Only ever read from `Do` and write to `Working On` / `Review` on the Privat team — do not touch
   other teams or projects.
