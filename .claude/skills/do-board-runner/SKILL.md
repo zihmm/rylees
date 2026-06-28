@@ -93,8 +93,6 @@ Do not implement any issue yourself in the orchestrator — only coordinate and 
 >    this order:
 >    - First line: `git commit: <full-hash>`
 >    - (Optional) a line summarizing what was done and which DoD items are covered.
->    - At the bottom, an `@Codex` mention with exactly this instruction:
->      `@Codex review this task. when you're finished, open a pull request and add the "codex_review" label to it.`
 >
 > 7. **Hand off to review.** Move the issue to **Review** with `mcp__linear__save_issue`
 >    (`id: <IDENTIFIER>`, `state: "41308466-d129-4cb5-8b45-fd42488b5f46"`).
