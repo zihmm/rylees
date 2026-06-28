@@ -3,6 +3,7 @@ import os
 import pytest
 
 import app.release_notes_generator as rng
+from langchain_core.messages import HumanMessage, SystemMessage
 from app.release_notes_generator import ReleaseNotesGenerator, GenerationError
 from app.models import AnalysisResult
 
@@ -33,11 +34,16 @@ class FakeResponse:
 class RecordingLLM:
     """Stand-in for ChatOpenAI that records the temperature it was built with."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, response_text=VALID_DRAFT, **kwargs):
         self.kwargs = kwargs
+        self.response_text = response_text
+        self.messages = None
+        self.invoke_count = 0
 
     def invoke(self, messages):
-        return FakeResponse(VALID_DRAFT)
+        self.invoke_count += 1
+        self.messages = messages
+        return FakeResponse(self.response_text)
 
 
 def test_temperature_passed_into_langchain_request_payload():
@@ -74,3 +80,44 @@ def test_generate_uses_configured_temperature(monkeypatch):
 
     assert draft == VALID_DRAFT
     assert generator._llm.kwargs["temperature"] == 0.1
+
+
+@pytest.mark.parametrize("tonality", ["professional", "humorous", "matter-of-fact"])
+def test_system_prompt_frames_the_given_tonality(monkeypatch, tonality):
+    monkeypatch.setattr(rng, "ChatOpenAI", lambda **kwargs: RecordingLLM(**kwargs))
+    project = {**PROJECT, "llm_tonality": tonality}
+
+    generator = ReleaseNotesGenerator(model="GPT-5.4", temperature=0.5)
+    generator.generate(ANALYSIS, project)
+
+    system_message = generator._llm.messages[0]
+    assert isinstance(system_message, SystemMessage)
+    assert f"in a {tonality} tone of voice" in system_message.content
+    assert f"Keep the tone consistently {tonality}" in system_message.content
+
+
+def test_user_prompt_carries_the_analysis(monkeypatch):
+    monkeypatch.setattr(rng, "ChatOpenAI", lambda **kwargs: RecordingLLM(**kwargs))
+
+    generator = ReleaseNotesGenerator(model="GPT-5.4", temperature=0.5)
+    generator.generate(ANALYSIS, PROJECT)
+
+    human_message = generator._llm.messages[1]
+    assert isinstance(human_message, HumanMessage)
+    assert "feat: add thing" in human_message.content
+    assert "diff --git" in human_message.content
+
+
+def test_generate_raises_after_validation_failures(monkeypatch):
+    monkeypatch.setattr(
+        rng,
+        "ChatOpenAI",
+        lambda **kwargs: RecordingLLM(response_text="too short", **kwargs),
+    )
+
+    generator = ReleaseNotesGenerator(model="GPT-5.4", temperature=0.5)
+
+    with pytest.raises(GenerationError):
+        generator.generate(ANALYSIS, PROJECT)
+
+    assert generator._llm.invoke_count == ReleaseNotesGenerator.MAX_RETRIES
