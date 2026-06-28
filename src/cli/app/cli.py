@@ -284,6 +284,7 @@ def _run_generate(
     publish: bool,
 ) -> None:
     from app.config import Config, ConfigError
+    from app.tracing import configure_tracing
     from app.api_client import ApiClient
     from app.git_connector import GitConnector, GitConnectorError
     from app.code_analyzer import CodeAnalyzer
@@ -317,6 +318,14 @@ def _run_generate(
     except ConfigError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1)
+
+    # Step 1b — Enable LangSmith tracing for LLM requests (opt-in)
+    configure_tracing(
+        enabled=config.langsmith_tracing,
+        api_key=config.langsmith_api_key,
+        project=config.langsmith_project,
+        endpoint=config.langsmith_endpoint,
+    )
 
     # Step 2 — Fetch project config from API
     api_client = ApiClient(api_token=config.api_token, base_url=config.api_url)

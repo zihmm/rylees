@@ -38,11 +38,13 @@ class RecordingLLM:
         self.kwargs = kwargs
         self.response_text = response_text
         self.messages = None
+        self.invoke_config = None
         self.invoke_count = 0
 
-    def invoke(self, messages):
+    def invoke(self, messages, config=None):
         self.invoke_count += 1
         self.messages = messages
+        self.invoke_config = config
         return FakeResponse(self.response_text)
 
 
@@ -106,6 +108,19 @@ def test_user_prompt_carries_the_analysis(monkeypatch):
     assert isinstance(human_message, HumanMessage)
     assert "feat: add thing" in human_message.content
     assert "diff --git" in human_message.content
+
+
+def test_invoke_carries_langsmith_trace_metadata(monkeypatch):
+    monkeypatch.setattr(rng, "ChatOpenAI", lambda **kwargs: RecordingLLM(**kwargs))
+
+    generator = ReleaseNotesGenerator(model="GPT-5.4", temperature=0.5)
+    generator.generate(ANALYSIS, PROJECT)
+
+    config = generator._llm.invoke_config
+    assert config["run_name"] == "release-notes-generation"
+    assert "rylees-cli" in config["tags"]
+    assert config["metadata"]["model"] == "GPT-5.4"
+    assert config["metadata"]["attempt"] == 1
 
 
 def test_generate_raises_after_validation_failures(monkeypatch):

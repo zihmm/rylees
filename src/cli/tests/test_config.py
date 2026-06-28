@@ -9,6 +9,13 @@ def no_dotenv(monkeypatch):
     monkeypatch.setattr(config_mod, "load_dotenv", lambda *a, **k: None)
     monkeypatch.delenv("RYLEES_LLM_TEMPERATURE", raising=False)
     monkeypatch.delenv("RYLEES_LLM_MODEL", raising=False)
+    for var in (
+        "LANGSMITH_TRACING",
+        "LANGSMITH_API_KEY",
+        "LANGSMITH_PROJECT",
+        "LANGSMITH_ENDPOINT",
+    ):
+        monkeypatch.delenv(var, raising=False)
 
 
 def _set_all_required(monkeypatch):
@@ -61,3 +68,39 @@ def test_default_model_is_gpt54(monkeypatch):
     _set_all_required(monkeypatch)
     cfg = Config.load()
     assert cfg.llm_model == "GPT-5.4"
+
+
+def test_langsmith_tracing_defaults_to_disabled(monkeypatch):
+    _set_all_required(monkeypatch)
+    cfg = Config.load()
+    assert cfg.langsmith_tracing is False
+    assert cfg.langsmith_api_key is None
+    assert cfg.langsmith_project is None
+    assert cfg.langsmith_endpoint is None
+
+
+@pytest.mark.parametrize("value", ["true", "True", "1", "yes", "on"])
+def test_langsmith_tracing_parsed_as_truthy(monkeypatch, value):
+    _set_all_required(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_TRACING", value)
+    cfg = Config.load()
+    assert cfg.langsmith_tracing is True
+
+
+@pytest.mark.parametrize("value", ["false", "0", "no", ""])
+def test_langsmith_tracing_parsed_as_falsy(monkeypatch, value):
+    _set_all_required(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_TRACING", value)
+    cfg = Config.load()
+    assert cfg.langsmith_tracing is False
+
+
+def test_langsmith_settings_loaded(monkeypatch):
+    _set_all_required(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_API_KEY", "ls-key")
+    monkeypatch.setenv("LANGSMITH_PROJECT", "my-project")
+    monkeypatch.setenv("LANGSMITH_ENDPOINT", "https://eu.api.smith.langchain.com")
+    cfg = Config.load()
+    assert cfg.langsmith_api_key == "ls-key"
+    assert cfg.langsmith_project == "my-project"
+    assert cfg.langsmith_endpoint == "https://eu.api.smith.langchain.com"

@@ -9,6 +9,9 @@ class ConfigError(Exception):
         self.var_name = var_name
         super().__init__(f"Missing required configuration variable: {var_name}")
 
+def _parse_bool(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
 @dataclass
 class Config:
     api_token: str
@@ -17,6 +20,11 @@ class Config:
     api_url: str
     llm_model: str
     llm_temperature_override: float | None
+    # LangSmith tracing for LLM requests (opt-in, all optional).
+    langsmith_tracing: bool = False
+    langsmith_api_key: str | None = None
+    langsmith_project: str | None = None
+    langsmith_endpoint: str | None = None
 
     @classmethod
     def load(cls) -> "Config":
@@ -43,4 +51,8 @@ class Config:
             api_url=os.getenv("RYLEES_API_URL", DEFAULT_API_URL),
             llm_model=os.getenv("RYLEES_LLM_MODEL", "GPT-5.4"),
             llm_temperature_override=float(temp_override) if temp_override else None,
+            langsmith_tracing=_parse_bool(os.getenv("LANGSMITH_TRACING")),
+            langsmith_api_key=os.getenv("LANGSMITH_API_KEY"),
+            langsmith_project=os.getenv("LANGSMITH_PROJECT"),
+            langsmith_endpoint=os.getenv("LANGSMITH_ENDPOINT"),
         )

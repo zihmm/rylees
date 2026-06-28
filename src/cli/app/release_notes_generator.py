@@ -40,6 +40,7 @@ class ReleaseNotesGenerator:
     MAX_RETRIES = 3
 
     def __init__(self, model: str, temperature: float):
+        self._model = model
         self._llm = ChatOpenAI(model=model, temperature=temperature)
         self._validator = Validator()
 
@@ -59,7 +60,14 @@ class ReleaseNotesGenerator:
                 SystemMessage(content=system_content),
                 HumanMessage(content=user_content),
             ]
-            response = self._llm.invoke(messages)
+            response = self._llm.invoke(
+                messages,
+                config={
+                    "run_name": "release-notes-generation",
+                    "tags": ["rylees-cli"],
+                    "metadata": {"model": self._model, "attempt": attempt + 1},
+                },
+            )
             draft = response.content
             try:
                 self._validator.validate(draft)
