@@ -1,0 +1,91 @@
+name: Codex PR → Linear Human Review
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  move-to-human-review:
+    # Only Codex PRs, identified by the "codex_review" label
+    if: contains(github.event.pull_request.labels.*.name, 'codex_review')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Linear identifier from branch
+        id: issue
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          id=$(printf '%s' "$HEAD_REF" | grep -oiE 'pri-[0-9]+' | head -n1 | tr '[:lower:]' '[:upper:]')
+          if [ -z "$id" ]; then
+            echo "No Linear identifier (PRI-<n>) in branch '$HEAD_REF' — skipping."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "identifier=$id" >> "$GITHUB_OUTPUT"
+          echo "number=${id#PRI-}" >> "$GITHUB_OUTPUT"
+          echo "Found Linear issue: $id"
+
+      - name: Move Review → Human Review
+        if: steps.issue.outputs.found == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          TEAM_KEY: PRI
+          REVIEW_STATE_ID: 41308466-d129-4cb5-8b45-fd42488b5f46
+          HUMAN_REVIEW_STATE_ID: c24146b4-e115-4aec-a02b-047e74586272
+          NUMBER: ${{ steps.issue.outputs.number }}
+          IDENTIFIER: ${{ steps.issue.outputs.identifier }}
+        run: |
+          set -euo pipefail
+
+          read -r -d '' QUERY <<'EOF' || true
+          query($key: String!, $number: Float!) {
+            issues(filter: { team: { key: { eq: $key } }, number: { eq: $number } }) {
+              nodes { id identifier state { id name } }
+            }
+          }
+          EOF
+
+          payload=$(jq -n --arg q "$QUERY" --arg key "$TEAM_KEY" --argjson number "$NUMBER" \
+            '{query:$q, variables:{key:$key, number:$number}}')
+
+          resp=$(curl -sS -X POST https://api.linear.app/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: $LINEAR_API_KEY" -d "$payload")
+
+          issue_id=$(printf '%s' "$resp" | jq -r '.data.issues.nodes[0].id // empty')
+          state_id=$(printf '%s' "$resp" | jq -r '.data.issues.nodes[0].state.id // empty')
+          state_name=$(printf '%s' "$resp" | jq -r '.data.issues.nodes[0].state.name // empty')
+
+          if [ -z "$issue_id" ]; then
+            echo "Issue $IDENTIFIER not found. Response: $resp"; exit 1
+          fi
+
+          # Only advance if it is actually in Review (idempotent / safe)
+          if [ "$state_id" != "$REVIEW_STATE_ID" ]; then
+            echo "Issue $IDENTIFIER is in '$state_name', not 'Review' — leaving unchanged."
+            exit 0
+          fi
+
+          read -r -d '' MUTATION <<'EOF' || true
+          mutation($id: String!, $stateId: String!) {
+            issueUpdate(id: $id, input: { stateId: $stateId }) {
+              success
+              issue { identifier state { name } }
+            }
+          }
+          EOF
+
+          mpayload=$(jq -n --arg q "$MUTATION" --arg id "$issue_id" --arg stateId "$HUMAN_REVIEW_STATE_ID" \
+            '{query:$q, variables:{id:$id, stateId:$stateId}}')
+
+          mresp=$(curl -sS -X POST https://api.linear.app/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: $LINEAR_API_KEY" -d "$mpayload")
+
+          ok=$(printf '%s' "$mresp" | jq -r '.data.issueUpdate.success // false')
+          [ "$ok" = "true" ] || { echo "Update failed: $mresp"; exit 1; }
+          echo "Moved $IDENTIFIER → Human Review."
