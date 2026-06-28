@@ -42,7 +42,8 @@ class FakeGitConnector:
 
 class FakeGenerator:
     def __init__(self, *args, **kwargs):
-        pass
+        _captured["generator_model"] = kwargs.get("model")
+        _captured["generator_temperature"] = kwargs.get("temperature")
 
     def generate(self, analysis, project):
         return "Diese Version verbessert die Benutzererfahrung deutlich."
@@ -104,3 +105,36 @@ def test_publish_flag_skips_hitl(patched_flow):
     assert "[A] Accept and publish" not in result.output
     # Warning about skipping human review is emitted.
     assert "Publishing release note without human review" in result.output
+
+
+def test_project_temperature_passed_to_generator(patched_flow):
+    """With no override, the project's API temperature reaches the generator."""
+    result = runner.invoke(
+        cli_mod.app, ["generate", "--start", "v1.0.0", "--publish"]
+    )
+    assert result.exit_code == 0
+    assert _captured["generator_temperature"] == 0.5
+    assert _captured["generator_model"] == "GPT-5.4"
+
+
+def test_temperature_override_passed_to_generator(monkeypatch):
+    """RYLEES_LLM_TEMPERATURE override wins over the project's API value."""
+    _captured.clear()
+    monkeypatch.setattr(
+        "app.config.Config.load",
+        classmethod(
+            lambda cls: Config("api", "proj", "sk", "https://api.test", "GPT-5.4", 0.9)
+        ),
+    )
+    monkeypatch.setattr("app.api_client.ApiClient", FakeApiClient)
+    monkeypatch.setattr("app.git_connector.GitConnector", FakeGitConnector)
+    monkeypatch.setattr(
+        "app.release_notes_generator.ReleaseNotesGenerator", FakeGenerator
+    )
+    monkeypatch.setattr("app.rn_publisher.RNPublisher", FakePublisher)
+
+    result = runner.invoke(
+        cli_mod.app, ["generate", "--start", "v1.0.0", "--publish"]
+    )
+    assert result.exit_code == 0
+    assert _captured["generator_temperature"] == 0.9
