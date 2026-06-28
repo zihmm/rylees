@@ -1,17 +1,23 @@
-name: Codex PR → Linear Human Review
+name: Codex PR → Linear status
 
 on:
   pull_request:
-    types: [opened, reopened, labeled]
+    types: [opened, reopened, labeled, closed]
 
 permissions:
   contents: read
 
 jobs:
-  move-to-human-review:
-    # Only Codex PRs, identified by the "codex_review" label
-    if: contains(github.event.pull_request.labels.*.name, 'codex_review')
+  sync-linear-status:
+    # Only Codex PRs (carry the "codex_review" label). On close, act only when merged.
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'codex_review') &&
+      (github.event.action != 'closed' || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    env:
+      REVIEW_STATE_ID: 41308466-d129-4cb5-8b45-fd42488b5f46
+      HUMAN_REVIEW_STATE_ID: c24146b4-e115-4aec-a02b-047e74586272
+      DONE_STATE_ID: 43be18ad-9fdc-4e19-a2c7-d3b58a276267
     steps:
       - name: Extract Linear identifier from branch
         id: issue
@@ -29,15 +35,34 @@ jobs:
           echo "number=${id#PRI-}" >> "$GITHUB_OUTPUT"
           echo "Found Linear issue: $id"
 
-      - name: Move Review → Human Review
+      - name: Decide target transition
+        id: target
+        if: steps.issue.outputs.found == 'true'
+        env:
+          ACTION: ${{ github.event.action }}
+        run: |
+          if [ "$ACTION" = "closed" ]; then
+            # PR merged (job-level guard guarantees merged == true) → Done, unconditional.
+            echo "target_state_id=$DONE_STATE_ID" >> "$GITHUB_OUTPUT"
+            echo "require_state_id=" >> "$GITHUB_OUTPUT"
+            echo "label=Done" >> "$GITHUB_OUTPUT"
+          else
+            # PR opened/reopened/labeled → Human Review, only if currently in Review.
+            echo "target_state_id=$HUMAN_REVIEW_STATE_ID" >> "$GITHUB_OUTPUT"
+            echo "require_state_id=$REVIEW_STATE_ID" >> "$GITHUB_OUTPUT"
+            echo "label=Human Review" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update Linear issue
         if: steps.issue.outputs.found == 'true'
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           TEAM_KEY: PRI
-          REVIEW_STATE_ID: 41308466-d129-4cb5-8b45-fd42488b5f46
-          HUMAN_REVIEW_STATE_ID: c24146b4-e115-4aec-a02b-047e74586272
           NUMBER: ${{ steps.issue.outputs.number }}
           IDENTIFIER: ${{ steps.issue.outputs.identifier }}
+          TARGET_STATE_ID: ${{ steps.target.outputs.target_state_id }}
+          REQUIRE_STATE_ID: ${{ steps.target.outputs.require_state_id }}
+          TARGET_LABEL: ${{ steps.target.outputs.label }}
         run: |
           set -euo pipefail
 
@@ -64,9 +89,15 @@ jobs:
             echo "Issue $IDENTIFIER not found. Response: $resp"; exit 1
           fi
 
-          # Only advance if it is actually in Review (idempotent / safe)
-          if [ "$state_id" != "$REVIEW_STATE_ID" ]; then
-            echo "Issue $IDENTIFIER is in '$state_name', not 'Review' — leaving unchanged."
+          # Optional guard: only move when the issue is in the expected source state.
+          if [ -n "$REQUIRE_STATE_ID" ] && [ "$state_id" != "$REQUIRE_STATE_ID" ]; then
+            echo "Issue $IDENTIFIER is in '$state_name', not the required source state — leaving unchanged."
+            exit 0
+          fi
+
+          # Idempotent: nothing to do if already at the target.
+          if [ "$state_id" = "$TARGET_STATE_ID" ]; then
+            echo "Issue $IDENTIFIER already in '$TARGET_LABEL' — nothing to do."
             exit 0
           fi
 
@@ -79,7 +110,7 @@ jobs:
           }
           EOF
 
-          mpayload=$(jq -n --arg q "$MUTATION" --arg id "$issue_id" --arg stateId "$HUMAN_REVIEW_STATE_ID" \
+          mpayload=$(jq -n --arg q "$MUTATION" --arg id "$issue_id" --arg stateId "$TARGET_STATE_ID" \
             '{query:$q, variables:{id:$id, stateId:$stateId}}')
 
           mresp=$(curl -sS -X POST https://api.linear.app/graphql \
@@ -88,4 +119,4 @@ jobs:
 
           ok=$(printf '%s' "$mresp" | jq -r '.data.issueUpdate.success // false')
           [ "$ok" = "true" ] || { echo "Update failed: $mresp"; exit 1; }
-          echo "Moved $IDENTIFIER → Human Review."
+          echo "Moved $IDENTIFIER → $TARGET_LABEL."
