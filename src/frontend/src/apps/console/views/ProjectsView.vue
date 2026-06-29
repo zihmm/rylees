@@ -27,7 +27,7 @@ const projects = computed(() => store.allProjects || []);
 <template>
   <ConsoleLayout current="Projects">
     <template #header-actions>
-      <AppButton icon="plus" @click="router.push('/customers')">New Project</AppButton>
+      <AppButton icon="plus" @click="router.push('/projects/new')">New Project</AppButton>
     </template>
 
     <div v-if="projects.length">

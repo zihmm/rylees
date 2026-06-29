@@ -19,6 +19,7 @@ const routes = [
   { path: '/customers/:customerId/projects/:id/edit', name: 'project-edit', component: () => import('../views/ProjectEditView.vue'), meta: { requiresAuth: true } },
   // Global Projects overview (backed by the new aggregate /projects endpoint).
   { path: '/projects', name: 'projects', component: () => import('../views/ProjectsView.vue'), meta: { requiresAuth: true } },
+  { path: '/projects/new', name: 'project-create-global', component: () => import('../views/ProjectCreateView.vue'), meta: { requiresAuth: true } },
   { path: '/account', name: 'account', component: () => import('../views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/api-key', name: 'api-key', component: () => import('../views/ApiKeyView.vue'), meta: { requiresAuth: true } },
   { path: '/error', name: 'server-error', component: () => import('../views/ServerErrorView.vue'), meta: { requiresAuth: true } },
