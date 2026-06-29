@@ -8,7 +8,7 @@
 # (add --remote-only to build on Fly's builder instead of local Docker)
 
 app = "rylees"
-primary_region = "fra"
+primary_region = "cdg"
 
 [build]
   dockerfile = "docker/api/Dockerfile"

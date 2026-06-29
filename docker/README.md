@@ -179,7 +179,7 @@ Provision and start it **before the first web deploy** (the web deploy's
 ```bash
 # one-time: create the app and its data volume in the same region as the web app
 fly apps create rylees-db
-fly volumes create pg_data --app rylees-db --region fra --size 10   # GB
+fly volumes create pg_data --app rylees-db --region cdg --size 10   # GB
 
 # the postgres superuser password — must match the web app's DB_PASSWORD below
 fly secrets set --app rylees-db POSTGRES_PASSWORD=<strong-password>
