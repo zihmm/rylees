@@ -1,0 +1,33 @@
+name: Deploy to Fly.io
+
+# Deploy the rylees web app on every push to main (i.e. when a PR is merged).
+# Only the web app is deployed here — the rylees-db Postgres app (fly.postgres.toml)
+# rarely changes and is deployed manually.
+on:
+  push:
+    branches: [main]
+
+# Never run two deploys at once; if a new merge lands mid-deploy, cancel the
+# in-flight one so the latest commit wins.
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy rylees
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # --remote-only builds on Fly's builder (no Docker needed on the runner).
+      # --config/--app pin the web app so the Postgres app is never touched.
+      # fly.toml's release_command runs `php artisan migrate --force` against
+      # rylees-db before the new version goes live.
+      - run: flyctl deploy --remote-only --config fly.toml --app rylees
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
