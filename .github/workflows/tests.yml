@@ -1,0 +1,87 @@
+name: Tests
+
+# Runs the unit/feature test suites for all three sub-projects (api, cli,
+# frontend) on every push to main and on every PR. The deploy workflow
+# (fly-deploy.yml) is chained off this one via `workflow_run` and only fires
+# when this workflow finishes successfully on main — so a red suite blocks the
+# deploy. The three jobs run in parallel; all must pass.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Don't pile up redundant test runs for the same ref; cancel the older one.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API (Laravel / Pest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: src/api/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('src/api/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Tests run against an in-memory sqlite database (see phpunit.xml), so no
+      # external service is needed.
+      - run: composer test
+
+  frontend:
+    name: Frontend (Jest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm test
+
+  cli:
+    name: CLI (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv python install 3.12
+
+      - run: uv sync --extra dev
+
+      - run: uv run pytest

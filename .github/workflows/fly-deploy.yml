@@ -1,10 +1,13 @@
 name: Deploy to Fly.io
 
-# Deploy the rylees web app on every push to main (i.e. when a PR is merged).
-# Only the web app is deployed here — the rylees-db Postgres app (fly.postgres.toml)
-# rarely changes and is deployed manually.
+# Deploy the rylees web app after the Tests workflow passes on main (i.e. when a
+# PR is merged). Chained off Tests via `workflow_run` so a red suite blocks the
+# deploy — see tests.yml. Only the web app is deployed here; the rylees-db
+# Postgres app (fly.postgres.toml) rarely changes and is deployed manually.
 on:
-  push:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
     branches: [main]
 
 # Never run two deploys at once; if a new merge lands mid-deploy, cancel the
@@ -17,10 +20,18 @@ jobs:
   deploy:
     name: Deploy rylees
     runs-on: ubuntu-latest
+    # Only deploy when the Tests run actually succeeded (workflow_run also fires
+    # on failure/cancelled). PR-triggered Tests runs are filtered out by the
+    # `branches: [main]` event filter above.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
     steps:
+      # workflow_run checks out the default branch HEAD by default; pin the exact
+      # commit that was tested so the right version ships.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
