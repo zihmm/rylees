@@ -160,11 +160,18 @@ fly launch --no-deploy --copy-config   # reuse the committed fly.toml; pick app 
 # App key (clean value — bypass the image entrypoint):
 fly secrets set APP_KEY="$(docker run --rm --entrypoint php rylees-web:latest artisan key:generate --show)"
 
-# Mail + OpenAI:
+# Mail token + OpenAI key (the only mail secret — the rest is in fly.toml [env]):
 fly secrets set \
-  MAIL_MAILER=smtp MAIL_HOST=... MAIL_PORT=... MAIL_USERNAME=... MAIL_PASSWORD=... MAIL_FROM_ADDRESS=... \
+  MAIL_PASSWORD=<mailtrap-api-token> \
   OPENAI_API_KEY=...
 ```
+
+Mail uses Mailtrap's live SMTP (`live.smtp.mailtrap.io:587`, STARTTLS, username
+`api`). `MAIL_MAILER/HOST/PORT/USERNAME/FROM_ADDRESS/FROM_NAME` live in
+`fly.toml [env]`; only the API token is a secret (`MAIL_PASSWORD`). The
+`MAIL_FROM_ADDRESS` domain (`rylees.ai`) must be verified for sending in
+Mailtrap, or delivery is rejected. For implicit TLS instead of STARTTLS, set
+`MAIL_PORT=465` and add `MAIL_SCHEME=smtps`.
 
 #### Database (self-hosted Postgres container)
 
