@@ -15,21 +15,27 @@ primary_region = "fra"
   build-target = "prod"
 
 # Runs once per release, before the new version goes live — migrate against the
-# Fly Postgres database (the image entrypoint deliberately does not auto-migrate).
+# Postgres database (the image entrypoint deliberately does not auto-migrate).
+# The `rylees-db` Postgres app must already be deployed and running (the release
+# machine reaches it over 6PN).
 [deploy]
   release_command = "php artisan migrate --force"
 
-# Non-secret config. The database is a separate Fly Postgres app on the private
-# 6PN network (no public IP) — see docker/README "Database (Fly Postgres)".
-# Secrets (APP_KEY, DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD, MAIL_*,
-# OPENAI_API_KEY) are set with `fly secrets set` — never commit them here.
-# NB: DB_HOST must be set, or Laravel falls back to 127.0.0.1 (connection refused).
+# Non-secret config. The database is a separate self-hosted Postgres container
+# app (`fly.postgres.toml`) on the private 6PN network (no public IP), reached at
+# `rylees-db.internal` — see docker/README "Database (self-hosted Postgres
+# container)". Only the secrets (APP_KEY, DB_PASSWORD, MAIL_*, OPENAI_API_KEY)
+# are set with `fly secrets set` — never commit them here. DB_USERNAME/DATABASE
+# must match the Postgres app's POSTGRES_USER/DB.
 [env]
   APP_ENV = "production"
   APP_DOMAIN = "rylees.ai"
   APP_URL = "https://api.rylees.ai"
   DB_CONNECTION = "pgsql"
+  DB_HOST = "rylees-db.internal"
   DB_PORT = "5432"
+  DB_DATABASE = "rylees"
+  DB_USERNAME = "rylees"
 
 [http_service]
   internal_port = 80

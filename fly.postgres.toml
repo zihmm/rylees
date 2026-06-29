@@ -1,0 +1,41 @@
+# Fly.io app for the Rylees PostgreSQL container.
+#
+# This runs the stock postgres:16-alpine image as its OWN Fly app, backed by a
+# persistent Fly volume. It declares no public service, so it has no public IP
+# and is reachable only by other apps in the org over Fly's private 6PN network
+# at the hostname `rylees-db.internal:5432` — never from the internet.
+#
+# This is the self-hosted equivalent of the `postgres` container in
+# docker/compose.prod.yaml, for the Fly deployment (Fly does not run compose).
+#
+# Deploy from the repo root:  fly deploy --config fly.postgres.toml
+# (see docker/README "Database (self-hosted Postgres container)" for setup order)
+
+app = "rylees-db"
+primary_region = "fra"
+
+[build]
+  image = "postgres:16-alpine"
+
+# POSTGRES_PASSWORD is a secret (fly secrets set --app rylees-db POSTGRES_PASSWORD=...)
+# and must match the web app's DB_PASSWORD. POSTGRES_DB/USER seed the database and
+# role on first boot — keep them in sync with the web app's DB_DATABASE/DB_USERNAME.
+# PGDATA points at a subdirectory of the mount so initdb ignores the volume's
+# lost+found and the data survives restarts/redeploys.
+[env]
+  POSTGRES_DB = "rylees"
+  POSTGRES_USER = "rylees"
+  PGDATA = "/var/lib/postgresql/data/pgdata"
+
+# Persistent storage. Create the volume once before the first deploy:
+#   fly volumes create pg_data --app rylees-db --region fra --size 10
+[mounts]
+  source = "pg_data"
+  destination = "/var/lib/postgresql/data"
+
+# Single always-on machine. No [http_service]/[[services]] block → no public
+# port and no auto-stop; the DB stays up and is private to the org network.
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"

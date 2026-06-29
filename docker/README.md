@@ -146,10 +146,11 @@ told where to find it (and which target to build) by the `[build]` block in the
 root `fly.toml`. Without it `fly deploy` fails with "no Dockerfile found". The
 build context is the repo root, governed by the root `.dockerignore`.
 
-> **Fly does not run `docker compose`** — it runs only the web image. The local
+> **Fly does not run `docker compose`** — it runs only the web image. The
 > `postgres` container in `compose.prod.yaml` is for the self-hosted compose
-> deployment below, **not** for Fly. On Fly the database is a separate
-> **Fly Postgres** app (next section).
+> deployment above, **not** for Fly. On Fly the database is the same
+> `postgres:16-alpine` container deployed as a **separate Fly app**
+> (`fly.postgres.toml`, next section).
 
 First-time setup:
 
@@ -165,35 +166,51 @@ fly secrets set \
   OPENAI_API_KEY=...
 ```
 
-#### Database (Fly Postgres)
+#### Database (self-hosted Postgres container)
 
-The database runs as its own Fly Postgres app on Fly's private **6PN** network
-with no public IP, so it's not reachable from the internet. Provision and attach
-it **before the first deploy** (the deploy's `release_command` migrates against
-it):
+The database runs as its **own Fly app** (`fly.postgres.toml`) — the stock
+`postgres:16-alpine` container backed by a persistent Fly **volume**, on Fly's
+private **6PN** network with no public service, so it's not reachable from the
+internet. The web app reaches it at the private hostname `rylees-db.internal:5432`.
 
-```bash
-fly postgres create --name rylees-db --region fra      # same region as the app
-fly postgres attach rylees-db --app rylees             # creates db + user, prints a connection URL
-```
-
-`attach` sets a `DATABASE_URL` secret, but the Laravel pgsql connection reads the
-discrete `DB_*` vars (`config/database.php`), so set those from the printed URL —
-`DB_HOST` is the Fly Postgres app's private hostname:
+Provision and start it **before the first web deploy** (the web deploy's
+`release_command` migrates against it):
 
 ```bash
-fly secrets set --app rylees \
-  DB_HOST=rylees-db.flycast \
-  DB_DATABASE=rylees \
-  DB_USERNAME=rylees \
-  DB_PASSWORD=<password from the attach output>
+# one-time: create the app and its data volume in the same region as the web app
+fly apps create rylees-db
+fly volumes create pg_data --app rylees-db --region fra --size 10   # GB
+
+# the postgres superuser password — must match the web app's DB_PASSWORD below
+fly secrets set --app rylees-db POSTGRES_PASSWORD=<strong-password>
+
+# deploy the postgres container (reads fly.postgres.toml)
+fly deploy --config fly.postgres.toml
 ```
 
-> Without `DB_HOST`, Laravel falls back to `127.0.0.1:5432` — the
-> `connection refused` error. `DB_CONNECTION=pgsql` and `DB_PORT=5432` are
-> already in `fly.toml [env]`.
+`POSTGRES_DB` (`rylees`) and `POSTGRES_USER` (`rylees`) are set in
+`fly.postgres.toml [env]`; the container initialises that database and role on
+first boot. Point the web app at it — only the password is a secret, and it must
+match the one set above:
 
-Deploy:
+```bash
+fly secrets set --app rylees DB_PASSWORD=<same-strong-password>
+```
+
+`DB_HOST=rylees-db.internal`, `DB_DATABASE=rylees`, `DB_USERNAME=rylees`,
+`DB_CONNECTION=pgsql` and `DB_PORT=5432` are already in the web app's
+`fly.toml [env]`.
+
+> **Why the DB is safe:** `fly.postgres.toml` declares no public service, so the
+> Postgres app has no public IP and is reachable only by other apps in the org
+> over 6PN (`rylees-db.internal`). Data lives on the `pg_data` volume and
+> survives restarts and redeploys.
+>
+> **Backups:** a single-volume container has no managed backups. Snapshot the
+> volume (`fly volumes snapshots list <vol-id>`) or run periodic `pg_dump` if you
+> need point-in-time recovery.
+
+Deploy the web app (after the Postgres app is up):
 
 ```bash
 fly deploy                # builds locally; add --remote-only if Docker isn't running
