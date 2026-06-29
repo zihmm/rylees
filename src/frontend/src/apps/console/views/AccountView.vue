@@ -93,8 +93,8 @@ async function save() {
       <p class="text-[13px] font-medium text-meta tracking-wide pt-8 pb-2">ORGANISATION</p>
       <TextField v-model="form.org_name" label="Name" :error="err('organisation.name')" />
       <TextField v-model="form.org_street" label="Street" :error="err('organisation.street')" />
-      <TextField v-model="form.org_postcode" label="Postcode" :error="err('organisation.postcode')" />
       <TextField v-model="form.org_city" label="City" :error="err('organisation.city')" />
+      <TextField v-model="form.org_postcode" label="Postcode" :error="err('organisation.postcode')" />
       <TextField v-model="form.org_website" label="Website" :error="err('organisation.website')" />
       <TextField v-model="form.org_email" label="Email" type="email" :error="err('organisation.email')" />
 
