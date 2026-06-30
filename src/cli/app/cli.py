@@ -1,13 +1,14 @@
 import os
+import re
 import sys
 import time
 import shutil
-import textwrap
 import itertools
 import threading
 import tempfile
 import subprocess
 from contextlib import contextmanager
+from importlib.metadata import version as _pkg_version, PackageNotFoundError
 from typing import Annotated
 import typer
 
@@ -192,6 +193,61 @@ def _scrub(message: str, *secrets: str) -> str:
     return message
 
 
+BOLD_ON = "\033[1m"
+BOLD_OFF = "\033[22m"
+_BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _visible_len(text: str) -> int:
+    """Length of a string as seen on screen, ignoring ANSI escape codes."""
+    return len(_ANSI_RE.sub("", text))
+
+
+def _bold_words(paragraph: str) -> list[tuple[str, bool]]:
+    """Split a paragraph into (word, is_bold) tuples.
+
+    Markdown ``**bold**`` spans mark their words as bold; the ``**`` markers
+    are dropped. Whitespace is collapsed the way ``textwrap`` would.
+    """
+    words: list[tuple[str, bool]] = []
+    pos = 0
+    for match in _BOLD_RE.finditer(paragraph):
+        words.extend((w, False) for w in paragraph[pos:match.start()].split())
+        words.extend((w, True) for w in match.group(1).split())
+        pos = match.end()
+    words.extend((w, False) for w in paragraph[pos:].split())
+    return words
+
+
+def _wrap_styled(paragraph: str, width: int, bold: bool) -> list[str]:
+    """Word-wrap a paragraph to ``width`` visible columns.
+
+    ``**bold**`` markers are always stripped. When ``bold`` is true the bold
+    words are wrapped in ANSI escape codes; those codes are zero-width, so
+    wrapping here and padding in the caller both count only visible glyphs.
+    """
+    words = _bold_words(paragraph)
+    if not words:
+        return [""]
+    lines: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for word, is_bold in words:
+        styled = f"{BOLD_ON}{word}{BOLD_OFF}" if (is_bold and bold) else word
+        extra = len(word) + (1 if current else 0)
+        if current and current_len + extra > width:
+            lines.append(" ".join(current))
+            current = [styled]
+            current_len = len(word)
+        else:
+            current.append(styled)
+            current_len += extra
+    if current:
+        lines.append(" ".join(current))
+    return lines
+
+
 def _render_box(text: str, actions: str | None = None) -> None:
     """Print text inside a heavy-bordered (bold) box.
 
@@ -203,14 +259,15 @@ def _render_box(text: str, actions: str | None = None) -> None:
     term_width = shutil.get_terminal_size((80, 24)).columns
     inner_width = max(24, min(76, term_width - 2 - PAD_X * 2))
 
+    bold = sys.stdout.isatty()
     wrapped: list[str] = []
     for paragraph in text.splitlines() or [""]:
         if paragraph.strip() == "":
             wrapped.append("")
         else:
-            wrapped.extend(textwrap.wrap(paragraph, width=inner_width) or [""])
+            wrapped.extend(_wrap_styled(paragraph, inner_width, bold))
 
-    width = max((len(line) for line in wrapped), default=0)
+    width = max((_visible_len(line) for line in wrapped), default=0)
     span = width + PAD_X * 2
     if actions is not None:
         span = max(span, len(actions) + 6)  # room for "━━ <actions> ━…"
@@ -227,7 +284,8 @@ def _render_box(text: str, actions: str | None = None) -> None:
     print("┏" + "━" * span + "┓")
     print(blank)                         # spacing inside the box (top)
     for line in wrapped:
-        print("┃" + " " * PAD_X + line.ljust(width) + " " * PAD_X + "┃")
+        padding = " " * (width - _visible_len(line))
+        print("┃" + " " * PAD_X + line + padding + " " * PAD_X + "┃")
     print(blank)                         # spacing inside the box (bottom)
     print(bottom)
     print()                              # spacing outside the box (bottom)
@@ -490,9 +548,16 @@ def gen(
     _run_generate(start, end, type_, major, minor, patch, publish)
 
 
+def _get_version() -> str:
+    try:
+        return _pkg_version("rylees")
+    except PackageNotFoundError:
+        return "0.0.0+local"
+
+
 def version_callback(value: bool):
     if value:
-        typer.echo("rylees 0.1.0")
+        typer.echo(f"rylees {_get_version()}")
         raise typer.Exit()
 
 

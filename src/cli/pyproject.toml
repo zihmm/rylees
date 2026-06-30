@@ -1,6 +1,6 @@
 [project]
 name = "rylees"
-version = "0.1.0"
+version = "0.1.5"
 description = "LLM-assisted release note generator and publisher"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -7,7 +7,10 @@ class ApiClient:
     def __init__(self, api_token: str, base_url: str = BASE_URL):
         self._client = httpx.Client(
             base_url=base_url,
-            headers={"Authorization": f"Bearer {api_token}"},
+            headers={
+                "Authorization": f"Bearer {api_token}",
+                "Accept": "application/json",
+            },
             timeout=30.0,
         )
 
