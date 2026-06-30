@@ -4,7 +4,7 @@ import MarkdownBody from '../../../shared/MarkdownBody.vue';
 
 defineProps({
   item: { type: Object, required: true },
-  isNewest: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: false },
   translating: { type: Boolean, default: false },
   language: { type: String, default: 'de' },
 });
@@ -12,17 +12,16 @@ defineProps({
 
 <template>
   <li class="relative pl-[70px] pt-[5px] pb-[72px] last:pb-0">
-    <!-- Marker. Each bubble carries a bg-card halo (inset -10px) that masks the
-         timeline line, leaving a 10px gap between the bubble and the line. -->
-    <span class="absolute left-0 top-1" aria-hidden="true">
-      <span v-if="isNewest" class="relative block w-[21px] h-[21px]">
-        <span class="absolute inset-[-10px] rounded-full bg-card"></span>
-        <span class="relative block w-full h-full rounded-full border-[3px] border-accent bg-card"></span>
-      </span>
-      <span v-else class="relative block w-[13px] h-[13px] ml-1">
-        <span class="absolute inset-[-10px] rounded-full bg-card"></span>
-        <span class="relative block w-full h-full rounded-full bg-accent"></span>
-      </span>
+    <!-- Marker. The bubble carries a bg-card halo (inset -10px) that masks the
+         timeline line, leaving a 10px gap. A single bubble morphs between the
+         active state (21px outlined ring) and the resting state (13px filled
+         dot) so it animates smoothly as the active entry changes on scroll. -->
+    <span class="absolute left-0 top-1 flex w-[21px] h-[21px] items-center justify-center" aria-hidden="true">
+      <span class="absolute inset-[-10px] rounded-full bg-card"></span>
+      <span
+        class="relative rounded-full border-accent transition-all duration-300 ease-out"
+        :class="isActive ? 'w-[21px] h-[21px] border-[3px] bg-card' : 'w-[13px] h-[13px] border-0 bg-accent'"
+      ></span>
     </span>
 
     <!-- Version pill -->

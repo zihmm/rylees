@@ -208,6 +208,79 @@ describe('ReleaseHistoryView', () => {
     scrollSpy.mockRestore();
   });
 
+  test('scrolling activates the lowest note whose top has crossed ~200px', async () => {
+    const { wrapper } = await mountView();
+    // Default fixture is a single page of four notes — one bubble per entry.
+    const bubbles = () => wrapper.findAll('ol .transition-all');
+    expect(bubbles()).toHaveLength(4);
+
+    // Simulate scroll: entries 0 and 1 have crossed the 200px line, 2 and 3
+    // are still below it — so entry 1 (the lowest crossed) becomes active.
+    const lis = bubbles()[0].element.closest('ol').children;
+    const tops = [-50, 150, 400, 700];
+    Array.from(lis).forEach((li, i) => {
+      li.getBoundingClientRect = () => ({ top: tops[i] });
+    });
+    window.dispatchEvent(new Event('scroll'));
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    await wrapper.vm.$nextTick();
+
+    expect(bubbles()[1].classes()).toContain('border-[3px]');
+    expect(bubbles()[0].classes()).toContain('border-0');
+    expect(bubbles()[2].classes()).toContain('border-0');
+  });
+
+  test('a note whose marker scrolls above the viewport hands off to the next', async () => {
+    const { wrapper } = await mountView();
+    const bubbles = () => wrapper.findAll('ol .transition-all');
+    const lis = bubbles()[0].element.closest('ol').children;
+    // Tall notes: entry 0 has scrolled above the top (negative), so although it
+    // still straddles the offset line, the active ring hands off to entry 1 —
+    // the first still-visible note — instead of clinging to the past note.
+    const tops = [-100, 500, 1100, 1700];
+    Array.from(lis).forEach((li, i) => {
+      li.getBoundingClientRect = () => ({ top: tops[i] });
+    });
+    window.dispatchEvent(new Event('scroll'));
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    await wrapper.vm.$nextTick();
+
+    expect(bubbles()[1].classes()).toContain('border-[3px]');
+    expect(bubbles()[0].classes()).toContain('border-0');
+    expect(bubbles()[2].classes()).toContain('border-0');
+  });
+
+  test('reaching the page bottom activates the last note past the offset', async () => {
+    const { wrapper } = await mountView();
+    const bubbles = () => wrapper.findAll('ol .transition-all');
+    const lis = bubbles()[0].element.closest('ol').children;
+    // Tops chosen so the offset rule alone would keep the newest entry active.
+    const tops = [100, 300, 500, 700];
+    Array.from(lis).forEach((li, i) => {
+      li.getBoundingClientRect = () => ({ top: tops[i] });
+    });
+
+    // Simulate a scrollable page scrolled all the way to its bottom.
+    const doc = document.documentElement;
+    const innerH = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    const scrollYd = Object.getOwnPropertyDescriptor(window, 'scrollY');
+    Object.defineProperty(doc, 'scrollHeight', { configurable: true, get: () => 1000 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 400 });
+    try {
+      window.dispatchEvent(new Event('scroll'));
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+      await wrapper.vm.$nextTick();
+
+      expect(bubbles()[3].classes()).toContain('border-[3px]');
+      expect(bubbles()[0].classes()).toContain('border-0');
+    } finally {
+      delete doc.scrollHeight;
+      if (innerH) Object.defineProperty(window, 'innerHeight', innerH);
+      if (scrollYd) Object.defineProperty(window, 'scrollY', scrollYd);
+    }
+  });
+
   test('body HTML from the API is rendered (markdown parsed server-side)', async () => {
     const { wrapper } = await mountView();
     // The API returns sanitized HTML (markdown already parsed). The timeline
