@@ -1,6 +1,6 @@
-<p align="right">
-[![Tests](https://github.com/zihmm/rylees/actions/workflows/tests.yml/badge.svg)](https://github.com/zihmm/rylees/actions/workflows/tests.yml)
-[![Deployments](https://github.com/zihmm/rylees/actions/workflows/fly-deploy.yml/badge.svg)](https://github.com/zihmm/rylees/actions/workflows/fly-deploy.yml)
+<p style='text-align: justify;'>
+[![Tests](https://github.com/zihmm/rylees/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/zihmm/rylees/actions/workflows/tests.yml)
+[![Deployment](https://github.com/zihmm/rylees/actions/workflows/fly-deploy.yml/badge.svg?branch=main)](https://github.com/zihmm/rylees/actions/workflows/fly-deploy.yml)
 </p>
 
 
