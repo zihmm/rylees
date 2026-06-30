@@ -100,6 +100,15 @@ rylees generate --type commit --start <prevEnd> --end <chunkEnd> --minor --publi
 6. Verify the result:
    `curl -s "$RYLEES_API_URL/public/release-history/<customerSlug>/<projectKey>"`.
 
+**Batching gotcha — zsh does not word-split.** The default shell here is zsh,
+where unquoted `$var` is NOT split on whitespace (`set -- $row` / `for x in $row`
+keep the whole string as one field). A loop that splits a `"bump start end"`
+row that way silently builds a malformed command, every publish fails, and a
+naive `[ "$got" = "$expected" ]` check passes on empty-equals-empty. Drive the
+batch with `while read -r bump start end expected; do … done <<'ROWS' … ROWS`
+(here-doc + `read` splits reliably), redirect the CLI's stdin from `/dev/null`,
+and only print OK when the version is **non-empty AND equals** the expected one.
+
 ## Notes
 
 - Publishing is an outward-facing, hard-to-reverse action. Confirm the target
