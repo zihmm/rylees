@@ -35,11 +35,12 @@ const accountFields = [
   { k: 'confirm_password', label: 'Confirm password', type: 'password', err: ['confirm_password'] },
 ];
 
-const organisationFields = [
+// Split around the postcode + city row, which is rendered side by side below.
+const organisationFieldsTop = [
   { k: 'org_name', label: 'Name', err: ['organisation.name'] },
   { k: 'org_street', label: 'Street', err: ['organisation.street'] },
-  { k: 'org_city', label: 'City', err: ['organisation.city'] },
-  { k: 'org_postcode', label: 'Postcode', err: ['organisation.postcode'] },
+];
+const organisationFieldsBottom = [
   { k: 'org_website', label: 'Website', err: ['organisation.website'] },
   { k: 'org_email', label: 'Email', type: 'email', err: ['organisation.email'] },
 ];
@@ -135,13 +136,37 @@ function apiError(...keys) {
 
       <p class="text-[13px] font-medium text-meta tracking-wide pt-6 mb-1">ORGANISATION</p>
       <AuthField
-        v-for="(f, i) in organisationFields"
+        v-for="f in organisationFieldsTop"
         :key="f.k"
         v-model="form[f.k]"
         :label="f.label"
         :type="f.type || 'text'"
         :error="apiError(...(f.err || []))"
-        :last="i === organisationFields.length - 1"
+      />
+      <div class="flex gap-4">
+        <div class="w-[120px] shrink-0">
+          <AuthField
+            v-model="form.org_postcode"
+            label="Postcode"
+            :error="apiError('organisation.postcode')"
+          />
+        </div>
+        <div class="flex-1 min-w-0">
+          <AuthField
+            v-model="form.org_city"
+            label="City"
+            :error="apiError('organisation.city')"
+          />
+        </div>
+      </div>
+      <AuthField
+        v-for="(f, i) in organisationFieldsBottom"
+        :key="f.k"
+        v-model="form[f.k]"
+        :label="f.label"
+        :type="f.type || 'text'"
+        :error="apiError(...(f.err || []))"
+        :last="i === organisationFieldsBottom.length - 1"
       />
 
       <div class="pt-8 flex justify-center">

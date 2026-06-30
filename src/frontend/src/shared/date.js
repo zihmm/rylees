@@ -9,10 +9,11 @@ dayjs.extend(relativeTime);
 const REL_LOCALE = { de: 'de', en: 'en-gb', fr: 'fr' };
 const ABS_LOCALE = { de: 'de-DE', en: 'en-GB', fr: 'fr-FR' };
 
-/** Relative time, e.g. "vor 3 Tagen" (localized). */
+/** Relative time, e.g. "Vor 3 Tagen" (localized, first letter capitalized). */
 export function relative(iso, lang = 'de') {
   if (!iso) return '';
-  return dayjs(iso).locale(REL_LOCALE[lang] || 'de').fromNow();
+  const text = dayjs(iso).locale(REL_LOCALE[lang] || 'de').fromNow();
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** Absolute date "DD. MMMM YYYY" (localized). */

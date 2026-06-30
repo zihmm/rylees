@@ -5,12 +5,20 @@ import { absolute } from '../../../shared/date.js';
 defineProps({
   item: { type: Object, required: true },
   language: { type: String, default: 'de' },
+  isLast: { type: Boolean, default: false },
 });
 </script>
 
 <template>
   <li class="relative flex items-start gap-3 pl-6 py-2">
-    <!-- Horizontal connector stub off the group's vertical line -->
+    <!-- Vertical connector: full height for normal rows; stops at the elbow on
+         the last row so it forms an "L" with no line continuing below. -->
+    <span
+      class="absolute left-0 top-0 w-px bg-card-border"
+      :class="isLast ? 'h-[18px]' : 'bottom-0'"
+      aria-hidden="true"
+    ></span>
+    <!-- Horizontal connector stub (elbow) -->
     <span
       class="absolute left-0 top-[18px] w-4 h-px bg-card-border"
       aria-hidden="true"

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, onMounted } from 'vue';
+import { ref, computed, inject, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getReleaseHistory, translateReleaseHistory } from '../../../shared/api.js';
 import { useVersionGrouping } from '../composables/useVersionGrouping.js';
@@ -17,18 +17,76 @@ const project = ref(null);
 const originalItems = ref([]); // original DE items from API, never overwritten
 const displayItems = ref([]); // items currently shown (may be translated)
 const activeLanguage = ref('de');
+// Locale used to render the relative/absolute date labels — driven by the
+// project's configured language (project settings), independent of the
+// body-translation toggle above.
+const projectLanguage = ref('en');
 const translating = ref(false);
 
-// Flip face state: 'a' = timeline (Release Notes), 'b' = accordion (History).
+// View state: 'a' = timeline (Release Notes), 'b' = accordion (History).
+// The two views sit side by side in a slider that slides horizontally between
+// them, with the container height animated to the active view's height.
 const face = ref('a');
 
 const { currentVersion, majorGroups } = useVersionGrouping(displayItems);
 
+// --- Release notes pagination (4 per page) ---
+const PAGE_SIZE = 4;
+const page = ref(0);
+const pageCount = computed(() => Math.ceil(displayItems.value.length / PAGE_SIZE));
+const pagedItems = computed(() =>
+  displayItems.value.slice(page.value * PAGE_SIZE, page.value * PAGE_SIZE + PAGE_SIZE)
+);
+
+function prevPage() {
+  if (page.value > 0) {
+    animateHeight.value = true;
+    page.value -= 1;
+  }
+}
+
+function nextPage() {
+  if (page.value < pageCount.value - 1) {
+    animateHeight.value = true;
+    page.value += 1;
+  }
+}
+
+// Keep the page in range if the item count shrinks.
+watch(pageCount, (count) => {
+  if (page.value > count - 1) page.value = Math.max(0, count - 1);
+});
+
+// --- Slide + height animation ---
+const timelineEl = ref(null);
+const historyEl = ref(null);
+const contentHeight = ref(null); // px; null until first measure
+// Height transition stays off until the first user interaction (paging or
+// switching view), so the container never animates on load/refresh — including
+// late height settles from data load, web-font reflow, or ResizeObserver.
+const animateHeight = ref(false);
+
+function measureHeight() {
+  const el = face.value === 'b' ? historyEl.value : timelineEl.value;
+  if (el) contentHeight.value = el.offsetHeight;
+}
+
+let resizeObserver = null;
+
 onMounted(async () => {
+  // Keep the container height in sync as either view's content changes
+  // (data load, body translation, accordion expand/collapse).
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => measureHeight());
+    if (timelineEl.value) resizeObserver.observe(timelineEl.value);
+    if (historyEl.value) resizeObserver.observe(historyEl.value);
+  }
+
   try {
     const response = await getReleaseHistory(customerSlug, projectKey);
     const data = response.data;
     project.value = data.project;
+    projectLanguage.value = data.project.language || 'en';
     originalItems.value = data.items.map((item) => ({ ...item }));
     displayItems.value = originalItems.value.map((item) => ({ ...item }));
     document.title = `${project.value.name} — Release History`;
@@ -39,6 +97,19 @@ onMounted(async () => {
       router.replace({ name: 'not-found' });
     }
   }
+
+  await nextTick();
+  measureHeight();
+});
+
+onBeforeUnmount(() => {
+  if (resizeObserver) resizeObserver.disconnect();
+});
+
+// Re-measure when the active view changes so the height animates to it.
+watch(face, async () => {
+  await nextTick();
+  measureHeight();
 });
 
 async function switchLanguage(lang) {
@@ -65,11 +136,13 @@ async function switchLanguage(lang) {
   }
 }
 
-function flipToHistory() {
+function showHistory() {
+  animateHeight.value = true;
   face.value = 'b';
 }
 
-function flipToNotes() {
+function showNotes() {
+  animateHeight.value = true;
   face.value = 'a';
 }
 
@@ -79,7 +152,7 @@ defineExpose({ switchLanguage, face, activeLanguage });
 
 <template>
   <HistoryCard :project-name="project?.name || ''">
-    <!-- State label per face -->
+    <!-- State label per view -->
     <template #label>
       <span
         v-if="face === 'a'"
@@ -91,7 +164,7 @@ defineExpose({ switchLanguage, face, activeLanguage });
       >History</span>
     </template>
 
-    <!-- Header button per face. DE/EN/FR language switcher is deferred to a
+    <!-- Header button per view. DE/EN/FR language switcher is deferred to a
          later feature (DESIGN-SPEC-RH §8); switchLanguage stays wired for it. -->
     <template #button>
       <button
@@ -99,7 +172,7 @@ defineExpose({ switchLanguage, face, activeLanguage });
         type="button"
         class="flex items-center justify-center w-10 h-[37px] rounded-card bg-[rgba(217,217,217,0.34)] text-title"
         aria-label="Show release history"
-        @click="flipToHistory"
+        @click="showHistory"
       >
         <AppIcon name="clock" :size="20" />
       </button>
@@ -108,24 +181,56 @@ defineExpose({ switchLanguage, face, activeLanguage });
         type="button"
         class="flex items-center justify-center w-10 h-[37px] rounded-card bg-[rgba(217,217,217,0.34)] text-title"
         aria-label="Back to release notes"
-        @click="flipToNotes"
+        @click="showNotes"
       >
         <AppIcon name="arrow-left" :size="20" />
       </button>
     </template>
 
-    <!-- Flip container: both faces present, preserve-3d -->
-    <div class="flip-scene">
-      <div class="flip-card" :class="{ 'is-flipped': face === 'b' }">
-        <div class="flip-face flip-face--front">
-          <ReleaseTimeline
-            :items="displayItems"
-            :translating="translating"
-            :language="activeLanguage"
-          />
+    <!-- Slider: both views sit side by side; the track slides horizontally and
+         the viewport height animates to the active view. -->
+    <div
+      class="slider-viewport"
+      :class="{ 'animate-height': animateHeight }"
+      :style="{ height: contentHeight !== null ? contentHeight + 'px' : undefined }"
+    >
+      <div class="slider-track" :class="{ 'show-history': face === 'b' }">
+        <div ref="historyEl" class="slide">
+          <VersionAccordion :groups="majorGroups" :language="projectLanguage" />
         </div>
-        <div class="flip-face flip-face--back">
-          <VersionAccordion :groups="majorGroups" :language="activeLanguage" />
+        <div ref="timelineEl" class="slide relative">
+          <!-- Timeline rail: spans the whole slide so it reaches the card's
+               bottom border on every pagination page (past the pagination). -->
+          <span
+            class="absolute left-[10px] top-2 bottom-0 w-px bg-card-border"
+            aria-hidden="true"
+          ></span>
+          <ReleaseTimeline
+            :items="pagedItems"
+            :translating="translating"
+            :language="projectLanguage"
+          />
+          <!-- Pagination: centered prev/next arrows; each disabled at its edge. -->
+          <div v-if="displayItems.length" class="flex items-center justify-center gap-4 pb-12">
+            <button
+              type="button"
+              class="flex items-center justify-center w-9 h-9 rounded-full border border-card-border text-title transition-colors hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-card-border"
+              :disabled="page === 0"
+              aria-label="Newer releases"
+              @click="prevPage"
+            >
+              <AppIcon name="chevron-left" :size="18" />
+            </button>
+            <button
+              type="button"
+              class="flex items-center justify-center w-9 h-9 rounded-full border border-card-border text-title transition-colors hover:border-accent disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-card-border"
+              :disabled="page >= pageCount - 1"
+              aria-label="Older releases"
+              @click="nextPage"
+            >
+              <AppIcon name="chevron-right" :size="18" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -133,28 +238,34 @@ defineExpose({ switchLanguage, face, activeLanguage });
 </template>
 
 <style scoped>
-.flip-scene {
-  perspective: 1600px;
+/* Easing: easeOutQuint — a smooth, decelerating glide. */
+.slider-viewport {
+  overflow: hidden;
 }
 
-.flip-card {
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.6s ease;
+/* Height only animates after the initial visit has settled. */
+.slider-viewport.animate-height {
+  transition: height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.flip-card.is-flipped {
-  transform: rotateY(180deg);
+.slider-track {
+  display: flex;
+  /* Each view keeps its own height (no stretch) so the viewport can animate
+     between them. */
+  align-items: flex-start;
+  width: 200%;
+  /* Default shows the timeline (the right slide). */
+  transform: translateX(-50%);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.flip-face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+/* Slide to the right to reveal the versions (the left slide). */
+.slider-track.show-history {
+  transform: translateX(0);
 }
 
-.flip-face--back {
-  position: absolute;
-  inset: 0;
-  transform: rotateY(180deg);
+.slide {
+  width: 50%;
+  flex: 0 0 50%;
 }
 </style>

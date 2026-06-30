@@ -8,7 +8,7 @@ defineProps({
   <div class="min-h-screen bg-page flex items-start justify-center p-6 sm:py-16">
     <div class="w-full max-w-[750px] bg-card border border-card-border rounded-card shadow-card overflow-hidden">
       <!-- Shared header row -->
-      <header class="flex items-center justify-between gap-3 px-6 py-4 border-b border-card-border">
+      <header class="flex items-center justify-between gap-3 px-6 sm:px-12 py-4 border-b border-card-border">
         <div class="flex items-center gap-3 min-w-0">
           <h1 class="text-[20px] leading-[22px] font-semibold uppercase text-title truncate">
             {{ projectName }}
@@ -22,7 +22,7 @@ defineProps({
       </header>
 
       <!-- Body (face content) -->
-      <div class="px-6 py-6">
+      <div class="px-6 sm:pl-[70px] sm:pr-24 pt-6 sm:pt-12">
         <slot />
       </div>
     </div>

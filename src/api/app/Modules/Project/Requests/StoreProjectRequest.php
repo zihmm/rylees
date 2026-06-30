@@ -21,6 +21,7 @@ final class StoreProjectRequest extends FormRequest
         return [
             'name' => 'required|string',
             'description' => 'nullable|string',
+            'language' => 'sometimes|in:de,en,fr',
             'llm_tonality_id' => 'required|uuid|exists:llm_tonality_types,id',
             'llm_temperature_id' => 'required|uuid|exists:llm_temperature_types,id',
         ];

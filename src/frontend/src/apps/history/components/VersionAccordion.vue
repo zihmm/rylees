@@ -1,14 +1,26 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import MajorGroup from './MajorGroup.vue';
 
-defineProps({
+const props = defineProps({
   groups: { type: Array, default: () => [] },
   language: { type: String, default: 'de' },
 });
 
-// Independent open state per major (closed by default).
+// Independent open state per major. The first group starts open; the rest are
+// closed and toggled by the user.
 const openMajors = ref(new Set());
+let autoOpened = false;
+watch(
+  () => props.groups,
+  (groups) => {
+    if (!autoOpened && groups && groups.length) {
+      openMajors.value = new Set([groups[0].major]);
+      autoOpened = true;
+    }
+  },
+  { immediate: true }
+);
 
 function toggle(major) {
   const next = new Set(openMajors.value);
@@ -22,7 +34,7 @@ function toggle(major) {
 </script>
 
 <template>
-  <div>
+  <div class="pb-12">
     <MajorGroup
       v-for="(group, index) in groups"
       :key="group.major"

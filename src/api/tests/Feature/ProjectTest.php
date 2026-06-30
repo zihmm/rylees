@@ -35,6 +35,43 @@ test('test_create_project_generates_key_and_token_and_creates_release_history', 
     $this->assertDatabaseHas('release_histories', ['project_id' => $response->json('id')]);
 });
 
+test('test_create_and_update_persist_project_language', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+
+    $tonality = LlmTonalityType::create(['id' => (string) Str::uuid(), 'name' => 'professional']);
+    $temperature = LlmTemperatureType::create(['id' => (string) Str::uuid(), 'name' => 'balanced', 'value' => 0.5]);
+
+    $create = $this->actingAs($user, 'sanctum')->postJson("/v1/customers/{$customer->id}/projects", [
+        'name' => 'Localized Project',
+        'language' => 'de',
+        'llm_tonality_id' => $tonality->id,
+        'llm_temperature_id' => $temperature->id,
+    ]);
+
+    $create->assertStatus(201);
+    $this->assertDatabaseHas('projects', ['id' => $create->json('id'), 'language' => 'de']);
+
+    $update = $this->actingAs($user, 'sanctum')
+        ->patchJson("/v1/customers/{$customer->id}/projects/{$create->json('id')}", ['language' => 'fr']);
+
+    $update->assertStatus(200);
+    expect($update->json('language'))->toBe('fr');
+    $this->assertDatabaseHas('projects', ['id' => $create->json('id'), 'language' => 'fr']);
+});
+
+test('test_invalid_project_language_is_rejected', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+
+    $this->actingAs($user, 'sanctum')
+        ->patchJson("/v1/customers/{$customer->id}/projects/{$project->id}", ['language' => 'xx'])
+        ->assertStatus(422);
+});
+
 test('test_project_token_appears_in_single_response_not_list', function (): void
 {
     $user = User::factory()->create();

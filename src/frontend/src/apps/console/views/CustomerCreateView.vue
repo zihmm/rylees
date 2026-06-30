@@ -5,6 +5,7 @@ import { getIndustries } from '../../../shared/api.js';
 import { useCustomersStore } from '../stores/customers.js';
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import TextField from '../components/TextField.vue';
+import PostcodeCityField from '../components/PostcodeCityField.vue';
 import SelectField from '../components/SelectField.vue';
 import TextArea from '../components/TextArea.vue';
 import AppButton from '../components/AppButton.vue';
@@ -65,8 +66,12 @@ async function save() {
     <form @submit.prevent="save">
       <TextField v-model="form.name" label="Name" required :error="err('organisation.name')" />
       <TextField v-model="form.street" label="Street" :error="err('organisation.street')" />
-      <TextField v-model="form.city" label="City" :error="err('organisation.city')" />
-      <TextField v-model="form.postcode" label="Postcode" :error="err('organisation.postcode')" />
+      <PostcodeCityField
+        v-model:postcode="form.postcode"
+        v-model:city="form.city"
+        :postcode-error="err('organisation.postcode')"
+        :city-error="err('organisation.city')"
+      />
       <TextField v-model="form.website" label="Website" :error="err('organisation.website')" />
       <TextField v-model="form.email" label="Email" type="email" :error="err('organisation.email')" />
       <SelectField v-model="form.industry_id" label="Industry" :options="industries" placeholder="—" :error="err('industry_id')" />

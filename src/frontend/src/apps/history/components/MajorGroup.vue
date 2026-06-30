@@ -51,14 +51,13 @@ const lastUpdate = computed(() => {
     </button>
 
     <div v-if="open" class="relative pl-5 pb-4">
-      <!-- Group vertical line for the connector stubs -->
-      <span class="absolute left-5 top-0 bottom-4 w-px bg-card-border" aria-hidden="true"></span>
       <ol>
         <SubVersionRow
-          v-for="item in group.items"
+          v-for="(item, i) in group.items"
           :key="item.id"
           :item="item"
           :language="language"
+          :is-last="i === group.items.length - 1"
         />
       </ol>
     </div>

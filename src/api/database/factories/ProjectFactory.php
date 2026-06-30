@@ -24,6 +24,7 @@ final class ProjectFactory extends Factory
             'customer_id' => Customer::factory(),
             'name' => $this->faker->unique()->words(3, true),
             'description' => $this->faker->sentence(),
+            'language' => 'en',
             'token' => Str::random(64),
             'llm_tonality_id' => LlmTonalityType::firstOrCreate(
                 ['name' => 'professional'],

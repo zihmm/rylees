@@ -41,7 +41,7 @@ services:
   frontend:
     image: node:20-alpine
     working_dir: /app
-    command: sh -c "npm ci && npm run build -- --watch"
+    command: sh -c "npm ci && npm run build -- --watch --mode docker"
     environment:
       CHOKIDAR_USEPOLLING: "true"
     volumes:

@@ -9,13 +9,9 @@ defineProps({
 </script>
 
 <template>
-  <div class="relative">
-    <!-- Continuous vertical timeline line -->
-    <span
-      class="absolute left-[10px] top-2 bottom-2 w-px bg-card-border"
-      aria-hidden="true"
-    ></span>
-
+  <div class="pb-12">
+    <!-- The vertical timeline line is rendered by the parent slide so it can
+         span past the pagination down to the card's bottom border. -->
     <ol class="relative">
       <TimelineEntry
         v-for="(item, index) in items"

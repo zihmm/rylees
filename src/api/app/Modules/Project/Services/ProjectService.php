@@ -30,6 +30,7 @@ final class ProjectService
                 'customer_id' => $customerId,
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
+                'language' => $data['language'] ?? 'en',
                 'llm_tonality_id' => $data['llm_tonality_id'],
                 'llm_temperature_id' => $data['llm_temperature_id'],
             ]);
@@ -48,6 +49,7 @@ final class ProjectService
             'id' => $project->id,
             'name' => $project->name,
             'key' => $project->key,
+            'language' => $project->language,
             'token' => $project->token,
             'created_at' => $project->created_at,
         ];
@@ -89,7 +91,7 @@ final class ProjectService
      */
     public function update(Project $project, array $data): array
     {
-        $attributes = $this->onlyPresent($data, ['name', 'description', 'llm_tonality_id', 'llm_temperature_id']);
+        $attributes = $this->onlyPresent($data, ['name', 'description', 'language', 'llm_tonality_id', 'llm_temperature_id']);
 
         if ($attributes !== [])
         {

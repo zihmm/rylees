@@ -34,6 +34,7 @@ final class PublicReleaseHistoryController
                 'id' => $project->id,
                 'name' => $project->name,
                 'key' => $project->key,
+                'language' => $project->language,
             ],
             'items' => ReleaseNoteResource::collection($notes)->resolve(),
         ]);

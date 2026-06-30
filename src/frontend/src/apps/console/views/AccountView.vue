@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/auth.js';
 import { updateMe } from '../../../shared/api.js';
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import TextField from '../components/TextField.vue';
+import PostcodeCityField from '../components/PostcodeCityField.vue';
 import AppButton from '../components/AppButton.vue';
 
 const auth = useAuthStore();
@@ -93,8 +94,12 @@ async function save() {
       <p class="text-[13px] font-medium text-meta tracking-wide pt-8 pb-2">ORGANISATION</p>
       <TextField v-model="form.org_name" label="Name" :error="err('organisation.name')" />
       <TextField v-model="form.org_street" label="Street" :error="err('organisation.street')" />
-      <TextField v-model="form.org_city" label="City" :error="err('organisation.city')" />
-      <TextField v-model="form.org_postcode" label="Postcode" :error="err('organisation.postcode')" />
+      <PostcodeCityField
+        v-model:postcode="form.org_postcode"
+        v-model:city="form.org_city"
+        :postcode-error="err('organisation.postcode')"
+        :city-error="err('organisation.city')"
+      />
       <TextField v-model="form.org_website" label="Website" :error="err('organisation.website')" />
       <TextField v-model="form.org_email" label="Email" type="email" :error="err('organisation.email')" />
 

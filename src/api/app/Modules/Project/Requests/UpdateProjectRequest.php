@@ -21,6 +21,7 @@ final class UpdateProjectRequest extends FormRequest
         return [
             'name' => 'sometimes|string',
             'description' => 'sometimes|nullable|string',
+            'language' => 'sometimes|in:de,en,fr',
             'llm_tonality_id' => 'sometimes|uuid|exists:llm_tonality_types,id',
             'llm_temperature_id' => 'sometimes|uuid|exists:llm_temperature_types,id',
         ];
