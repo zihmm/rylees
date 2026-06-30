@@ -1,4 +1,4 @@
-name: Deploy to Fly.io
+name: Deployment
 
 # Deploy the rylees web app after the Tests workflow passes on main (i.e. when a
 # PR is merged). Chained off Tests via `workflow_run` so a red suite blocks the
@@ -20,6 +20,9 @@ jobs:
   deploy:
     name: Deploy rylees
     runs-on: ubuntu-latest
+    # FLY_API_TOKEN is stored as a secret on the `production` environment, so the
+    # job must opt into that environment for `secrets.FLY_API_TOKEN` to resolve.
+    environment: production
     # Only deploy when the Tests run actually succeeded (workflow_run also fires
     # on failure/cancelled). PR-triggered Tests runs are filtered out by the
     # `branches: [main]` event filter above.
