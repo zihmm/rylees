@@ -28,8 +28,10 @@ final class ProjectOverviewResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'key' => $this->key,
             'customer_id' => $this->customer_id,
             'customer_name' => $this->customer->organisation->name,
+            'organisation_slug' => $this->customer->organisation->slug,
             'description' => $this->description === null
                 ? null
                 : Str::limit($this->description, 180),

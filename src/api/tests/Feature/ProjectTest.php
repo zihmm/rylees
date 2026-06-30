@@ -209,6 +209,19 @@ test('test_list_all_projects_reports_customer_name_and_latest_version', function
     expect($response->json('data.0.version'))->toBe('1.2.3');
 });
 
+test('test_list_all_projects_includes_key_and_organisation_slug_for_history_link', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/v1/projects');
+
+    $response->assertStatus(200);
+    expect($response->json('data.0.key'))->toBe($project->key);
+    expect($response->json('data.0.organisation_slug'))->toBe($customer->organisation->slug);
+});
+
 test('test_list_all_projects_version_is_null_without_release_notes', function (): void
 {
     $user = User::factory()->create();

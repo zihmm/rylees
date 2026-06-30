@@ -32,8 +32,8 @@ Rules:
 - Do NOT use technical jargon.
 - Write the release note in {language}.
 - Start the release note with an introductory, summarising sentence. Write it in bold with two line breaks.
-- Maximum 300 words.
-- Mark the 
+- Do not refer to your own release (“This release”)
+- Use between 20 and 100 Words. **Max. 180 words.** 
 - Keep it as short as necessary
 - Keep the tone consistently {tonality} throughout.
 - Use paragraphs for longer texts, separating them with a blank line.
