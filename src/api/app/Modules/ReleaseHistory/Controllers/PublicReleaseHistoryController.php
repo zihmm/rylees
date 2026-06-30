@@ -9,6 +9,7 @@ use App\Modules\Customer\Services\CustomerService;
 use App\Modules\Project\Services\ProjectService;
 use App\Modules\ReleaseHistory\Repositories\ReleaseHistoryRepository;
 use App\Modules\ReleaseHistory\Resources\ReleaseNoteResource;
+use App\Modules\ReleaseHistory\Services\MarkdownRenderer;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,7 +64,7 @@ final class PublicReleaseHistoryController
         $items = $notes->map(fn ($n): array => [
             'id' => $n->id,
             'version' => "{$n->version_major}.{$n->version_minor}.{$n->version_patch}",
-            'body' => $bodyById[$n->id]['body'] ?? $n->body,
+            'body' => MarkdownRenderer::toHtml($bodyById[$n->id]['body'] ?? $n->body),
         ])->values();
 
         return response()->json([

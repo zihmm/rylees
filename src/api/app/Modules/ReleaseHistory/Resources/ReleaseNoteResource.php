@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ReleaseHistory\Resources;
 
 use App\Modules\ReleaseHistory\Models\ReleaseNote;
+use App\Modules\ReleaseHistory\Services\MarkdownRenderer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,7 +22,7 @@ final class ReleaseNoteResource extends JsonResource
         return [
             'id' => $this->id,
             'version' => "{$this->version_major}.{$this->version_minor}.{$this->version_patch}",
-            'body' => $this->body,
+            'body' => MarkdownRenderer::toHtml($this->body),
             'publishedAt' => $this->created_at->toIso8601ZuluString(),
         ];
     }

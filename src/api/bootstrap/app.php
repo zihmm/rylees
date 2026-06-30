@@ -31,6 +31,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
         ]);
+
+        // API-only app (no `login` route): never redirect unauthenticated
+        // requests. Returning null lets the AuthenticationException surface as
+        // the clean 401 JSON defined in withExceptions instead of blowing up
+        // with "Route [login] not defined" (500).
+        $middleware->redirectGuestsTo(fn (): ?string => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void
     {

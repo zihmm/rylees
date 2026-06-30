@@ -25,6 +25,17 @@ final class ReleaseHistoryService
     }
 
     /**
+     * Provision (and return) the release history that backs a project. Projects
+     * created through the API always get one via initialiseForProject(), but
+     * projects inserted directly by seeders/factories may not — callers use this
+     * to lazily back-fill so publishing never fails on a null history.
+     */
+    public function provisionForProject(string $projectId): ReleaseHistory
+    {
+        return $this->repository->createForProject($projectId);
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */

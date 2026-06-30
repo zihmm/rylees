@@ -51,7 +51,53 @@ test('test_public_endpoint_returns_notes_without_auth', function (): void
     expect($response->json('project.key'))->toBe($project->key);
     expect($response->json('items'))->not->toBeEmpty();
     expect($response->json('items.0.version'))->toBe('1.1.0');
-    expect($response->json('items.0.body'))->toBe('Newest release.');
+    expect($response->json('items.0.body'))->toBe('<p>Newest release.</p>');
+});
+
+test('test_public_endpoint_renders_markdown_body_to_html', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+    $history = ReleaseHistory::factory()->create(['project_id' => $project->id]);
+
+    ReleaseNote::factory()->create([
+        'release_history_id' => $history->id,
+        'author_id' => $user->id,
+        'body' => 'Ships **bold** and _italic_ now.',
+    ]);
+
+    $response = $this->getJson("/v1/public/release-history/{$customer->organisation->slug}/{$project->key}");
+
+    $response->assertStatus(200);
+    expect($response->json('items.0.body'))
+        ->toContain('<strong>bold</strong>')
+        ->toContain('<em>italic</em>');
+});
+
+test('test_public_endpoint_escapes_raw_html_in_body', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+    $history = ReleaseHistory::factory()->create(['project_id' => $project->id]);
+
+    ReleaseNote::factory()->create([
+        'release_history_id' => $history->id,
+        'author_id' => $user->id,
+        'body' => "Heads up <script>alert('xss')</script> **safe**.",
+    ]);
+
+    $response = $this->getJson("/v1/public/release-history/{$customer->organisation->slug}/{$project->key}");
+
+    $response->assertStatus(200);
+    $body = $response->json('items.0.body');
+
+    // Raw HTML is escaped, never interpreted; markdown still renders.
+    expect($body)
+        ->not->toContain('<script>')
+        ->toContain('&lt;script&gt;')
+        ->toContain('<strong>safe</strong>');
 });
 
 test('test_public_endpoint_exposes_project_language', function (): void
@@ -121,11 +167,12 @@ test('test_translate_returns_translated_bodies', function (): void
     expect($fake->received['notes'])->toHaveCount(2);
     expect($fake->received['notes'][0]['body'])->toBe('Newest release.');
 
-    // Response items carry the reconstructed version + the translated body.
+    // Response items carry the reconstructed version + the translated body,
+    // rendered from markdown to HTML.
     expect($response->json('items.0.version'))->toBe('1.1.0');
-    expect($response->json('items.0.body'))->toBe('FR: Newest release.');
+    expect($response->json('items.0.body'))->toBe('<p>FR: Newest release.</p>');
     expect($response->json('items.1.version'))->toBe('1.0.0');
-    expect($response->json('items.1.body'))->toBe('FR: Older release.');
+    expect($response->json('items.1.body'))->toBe('<p>FR: Older release.</p>');
 });
 
 test('test_translate_payload_contains_only_id_and_body_no_secrets', function (): void

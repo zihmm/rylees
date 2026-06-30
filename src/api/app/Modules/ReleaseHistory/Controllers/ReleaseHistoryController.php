@@ -33,7 +33,11 @@ final class ReleaseHistoryController
             return response()->json(['message' => 'Forbidden.', 'code' => 'forbidden'], 403);
         }
 
-        $result = $this->service->publish($project->releaseHistory, $request->validated(), (string) auth()->id());
+        // A project created through the API always has a release history, but one
+        // inserted by a seeder/factory may not — provision it on first publish.
+        $history = $project->releaseHistory ?? $this->service->provisionForProject($project->id);
+
+        $result = $this->service->publish($history, $request->validated(), (string) auth()->id());
 
         return response()->json($result, 201);
     }
