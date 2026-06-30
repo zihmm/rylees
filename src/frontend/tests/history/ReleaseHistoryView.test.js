@@ -12,7 +12,7 @@ const KEY = 'member-portal';
 const fixture = {
   project: { id: 'p1', name: 'Member Portal', key: KEY, language: 'de' },
   items: [
-    { id: 'i1', version: '3.5.0', body: 'Latest release with <b>bold</b> text.', publishedAt: '2026-06-01T10:00:00Z' },
+    { id: 'i1', version: '3.5.0', body: 'Latest release with <strong>bold</strong> text.', publishedAt: '2026-06-01T10:00:00Z' },
     { id: 'i2', version: '3.4.1', body: 'A 3.x patch.', publishedAt: '2026-05-01T10:00:00Z' },
     { id: 'i3', version: '2.0.0', body: 'Major 2 release.', publishedAt: '2025-12-01T10:00:00Z' },
     { id: 'i4', version: '1.0.0', body: 'First release.', publishedAt: '2025-01-01T10:00:00Z' },
@@ -135,7 +135,7 @@ describe('ReleaseHistoryView', () => {
     await wrapper.vm.switchLanguage('de');
     await flushPromises();
     expect(api.translateReleaseHistory).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain('Latest release with <b>bold</b> text.');
+    expect(wrapper.text()).toContain('Latest release with bold text.');
   });
 
   test('shows loading skeleton while translate request is in flight', async () => {
@@ -187,11 +187,13 @@ describe('ReleaseHistoryView', () => {
     expect(next.attributes('disabled')).toBeDefined();
   });
 
-  test('body text rendered with text interpolation, not v-html', async () => {
+  test('body HTML from the API is rendered (markdown parsed server-side)', async () => {
     const { wrapper } = await mountView();
-    // The body contains literal "<b>bold</b>"; with interpolation it appears as
-    // escaped text and creates NO real <b> element.
-    expect(wrapper.find('b').exists()).toBe(false);
-    expect(wrapper.text()).toContain('<b>bold</b>');
+    // The API returns sanitized HTML (markdown already parsed). The timeline
+    // renders it via MarkdownBody's v-html, so markdown-derived tags become
+    // real elements rather than escaped text.
+    expect(wrapper.find('strong').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Latest release with bold text.');
+    expect(wrapper.text()).not.toContain('<strong>');
   });
 });

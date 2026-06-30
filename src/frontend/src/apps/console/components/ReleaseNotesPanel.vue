@@ -1,5 +1,6 @@
 <script setup>
 import { relative } from '../../../shared/date.js';
+import MarkdownBody from '../../../shared/MarkdownBody.vue';
 import Pill from './Pill.vue';
 import StatusDot from './StatusDot.vue';
 
@@ -18,7 +19,7 @@ defineProps({
       <li v-for="note in items" :key="note.id" class="border-b border-field-border pb-6 last:border-0">
         <div class="flex gap-3">
           <StatusDot variant="green" class="mt-0.5" />
-          <p class="text-[14px] text-black line-clamp-3">{{ note.body }}</p>
+          <MarkdownBody :html="note.body" class="text-[14px] text-black line-clamp-3" />
         </div>
         <div class="flex items-center justify-between mt-2 pl-7">
           <span class="text-meta text-[13px]">{{ relative(note.publishedAt) }}</span>

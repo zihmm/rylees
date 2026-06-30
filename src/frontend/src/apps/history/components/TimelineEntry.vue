@@ -1,5 +1,6 @@
 <script setup>
 import { relative } from '../../../shared/date.js';
+import MarkdownBody from '../../../shared/MarkdownBody.vue';
 
 defineProps({
   item: { type: Object, required: true },
@@ -37,7 +38,7 @@ defineProps({
       <div class="animate-pulse bg-gray-200 rounded h-4 w-3/4"></div>
     </template>
     <template v-else>
-      <p class="text-[14px] leading-[22px] text-black whitespace-pre-line">{{ item.body }}</p>
+      <MarkdownBody :html="item.body" class="text-[14px] leading-[22px] text-black" />
     </template>
 
     <!-- Meta date -->
