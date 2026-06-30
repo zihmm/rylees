@@ -12,6 +12,8 @@ defineProps({
   subtitleIcon: { type: String, default: 'briefcase' },
   active: { type: Boolean, default: true }, // green dot when active, grey otherwise
   description: { type: String, default: '' },
+  linkHref: { type: String, default: '' }, // external URL; replaces the description line when set
+  linkLabel: { type: String, default: '' }, // visible text for linkHref (falls back to the href)
   version: { type: String, default: '' },
   beta: { type: Boolean, default: false },
   updated: { type: String, default: '' }, // relative time string
@@ -35,7 +37,19 @@ defineProps({
         <RouterLink v-if="subtitleTo" :to="subtitleTo" class="truncate hover:underline hover:text-ink" @click.stop>{{ subtitle }}</RouterLink>
         <span v-else class="truncate">{{ subtitle }}</span>
       </div>
-      <p v-if="description" class="text-[14px] text-muted line-clamp-2 mt-3">{{ description }}</p>
+      <!-- @click.stop keeps the link from triggering the card's own link; opens in a new tab. -->
+      <a
+        v-if="linkHref"
+        :href="linkHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 text-[14px] text-accent hover:underline mt-3 break-all"
+        @click.stop
+      >
+        <AppIcon name="external-link" :size="14" class="shrink-0" />
+        {{ linkLabel || linkHref }}
+      </a>
+      <p v-else-if="description" class="text-[14px] text-muted line-clamp-2 mt-3">{{ description }}</p>
       <div v-if="version || beta" class="flex items-center gap-2 mt-3">
         <Pill v-if="version" :label="version" variant="version" />
         <Pill v-if="beta" label="BETA" variant="beta" />

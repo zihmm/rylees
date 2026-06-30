@@ -187,6 +187,27 @@ describe('ReleaseHistoryView', () => {
     expect(next.attributes('disabled')).toBeDefined();
   });
 
+  test('paging smoothly scrolls back to the top of the page', async () => {
+    const items = Array.from({ length: 5 }, (_, i) => ({
+      id: `p${i}`,
+      version: `1.0.${i}`,
+      body: `Body number ${i}.`,
+      publishedAt: '2026-06-01T10:00:00Z',
+    }));
+    api.getReleaseHistory.mockResolvedValue({
+      data: { project: { id: 'p1', name: 'Member Portal', key: KEY, language: 'de' }, items },
+    });
+    const scrollSpy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const { wrapper } = await mountView();
+
+    await wrapper.get('[aria-label="Older releases"]').trigger('click');
+    expect(scrollSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+
+    await wrapper.get('[aria-label="Newer releases"]').trigger('click');
+    expect(scrollSpy).toHaveBeenCalledTimes(2);
+    scrollSpy.mockRestore();
+  });
+
   test('body HTML from the API is rendered (markdown parsed server-side)', async () => {
     const { wrapper } = await mountView();
     // The API returns sanitized HTML (markdown already parsed). The timeline

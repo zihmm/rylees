@@ -32,6 +32,8 @@ const ICONS = {
   folder:
     '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
   bolt: '<path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" fill="currentColor" stroke="none"/>',
+  'external-link':
+    '<path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/>',
   'cross-circle': '<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5l-5 5M9.5 9.5l5 5"/>',
   'shield-exclamation':

@@ -38,10 +38,17 @@ const pagedItems = computed(() =>
   displayItems.value.slice(page.value * PAGE_SIZE, page.value * PAGE_SIZE + PAGE_SIZE)
 );
 
+// Glide back to the top of the page so the reader starts at the first entry
+// of the new page rather than wherever they had scrolled to.
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function prevPage() {
   if (page.value > 0) {
     animateHeight.value = true;
     page.value -= 1;
+    scrollToTop();
   }
 }
 
@@ -49,6 +56,7 @@ function nextPage() {
   if (page.value < pageCount.value - 1) {
     animateHeight.value = true;
     page.value += 1;
+    scrollToTop();
   }
 }
 

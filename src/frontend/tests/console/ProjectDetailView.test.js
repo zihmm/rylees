@@ -91,6 +91,20 @@ describe('ProjectDetailView', () => {
     expect(writeText).toHaveBeenCalledWith('ryl_secret_token_123');
   });
 
+  test('release history shows the public domain in a disabled field with a new-tab link', async () => {
+    const { wrapper } = await mountView();
+    // The domain is shown without a scheme inside a disabled input.
+    const field = wrapper.find('input[disabled]');
+    expect(field.exists()).toBe(true);
+    expect(field.element.value).toBe('acme-ltd.rylees.ai/member-portal');
+    // The trailing icon links to the full https URL and opens in a new tab.
+    const link = wrapper.find('a[aria-label="Open release history in a new tab"]');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes('href')).toBe('https://acme-ltd.rylees.ai/member-portal');
+    expect(link.attributes('target')).toBe('_blank');
+    expect(link.attributes('rel')).toContain('noopener');
+  });
+
   test('release notes render version, relative date and body in the sidebar', async () => {
     const { wrapper } = await mountView();
     const text = wrapper.text();

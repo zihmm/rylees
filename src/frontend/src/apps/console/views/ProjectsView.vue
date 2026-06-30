@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProjectsStore } from '../stores/projects.js';
 import { relative } from '../../../shared/date.js';
+import { releaseHistoryDomain, releaseHistoryUrl } from '../../../shared/releaseHistory.js';
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import OverviewCard from '../components/OverviewCard.vue';
 import EmptyState from '../components/EmptyState.vue';
@@ -38,7 +39,8 @@ const projects = computed(() => store.allProjects || []);
         :title="p.name"
         :subtitle="p.customer_name || ''"
         :subtitle-to="`/customers/${p.customer_id}/edit`"
-        :description="p.description || ''"
+        :link-href="releaseHistoryUrl(p.organisation_slug, p.key)"
+        :link-label="releaseHistoryDomain(p.organisation_slug, p.key)"
         :version="p.version ? 'v' + p.version : ''"
         :updated="p.updated_at ? 'Updated ' + relative(p.updated_at) : ''"
         active
