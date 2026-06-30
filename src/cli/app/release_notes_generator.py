@@ -6,6 +6,14 @@ from app.validator import Validator, ValidationError
 class GenerationError(Exception):
     pass
 
+LANGUAGE_NAMES = {
+    "en": "English",
+    "de": "German",
+    "fr": "French",
+    "it": "Italian",
+    "es": "Spanish",
+}
+
 SYSTEM_PROMPT_TEMPLATE = """\
 You are a technical writer creating release notes for {customer_name},
 a company in the {customer_industry} industry.
@@ -20,7 +28,7 @@ whole note.
 Rules:
 - Do NOT mention file names, function names, or code.
 - Do NOT use technical jargon.
-- Write in German.
+- Write the release note in {language}.
 - Maximum 500 words.
 - Keep the tone consistently {tonality} throughout.
 - Describe what changed from the user's perspective, not how it was implemented.\
@@ -45,10 +53,12 @@ class ReleaseNotesGenerator:
         self._validator = Validator()
 
     def generate(self, analysis: AnalysisResult, project: ProjectConfig) -> str:
+        language = LANGUAGE_NAMES.get(project["language"], project["language"])
         system_content = SYSTEM_PROMPT_TEMPLATE.format(
             customer_name=project["customer_name"],
             customer_industry=project["customer_industry"],
             tonality=project["llm_tonality"],
+            language=language,
         )
         user_content = USER_PROMPT_TEMPLATE.format(
             project_description=project["description"],

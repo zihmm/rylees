@@ -8,6 +8,7 @@ PROJECT_JSON = {
     "name": "Member Portal",
     "key": "member-portal",
     "description": "A customer-facing portal for membership management.",
+    "language": "de",
     "customer": {
         "id": "cust-1",
         "name": "Acme Ltd.",
@@ -29,6 +30,7 @@ def test_get_project_returns_project_config(httpx_mock):
     client = ApiClient(api_token="api-tok")
     config = client.get_project("tok123")
     assert config["id"] == "proj-1"
+    assert config["language"] == "de"
     assert config["customer_name"] == "Acme Ltd."
     assert config["customer_industry"] == "Architecture"
     assert config["llm_temperature"] == 0.5

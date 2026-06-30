@@ -6,6 +6,7 @@ class ProjectConfig(TypedDict):
     name: str
     key: str
     description: str
+    language: str
     customer_name: str
     customer_industry: str
     llm_temperature: float

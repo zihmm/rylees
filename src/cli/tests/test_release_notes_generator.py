@@ -12,6 +12,7 @@ PROJECT = {
     "name": "Member Portal",
     "key": "member-portal",
     "description": "A customer-facing portal.",
+    "language": "de",
     "customer_name": "Acme Ltd.",
     "customer_industry": "Architecture",
     "llm_temperature": 0.5,
@@ -96,6 +97,26 @@ def test_system_prompt_frames_the_given_tonality(monkeypatch, tonality):
     assert isinstance(system_message, SystemMessage)
     assert f"in a {tonality} tone of voice" in system_message.content
     assert f"Keep the tone consistently {tonality}" in system_message.content
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        ("de", "German"),
+        ("en", "English"),
+        ("fr", "French"),
+        ("pt", "pt"),  # unknown code falls back to the raw value
+    ],
+)
+def test_system_prompt_uses_project_language(monkeypatch, code, expected):
+    monkeypatch.setattr(rng, "ChatOpenAI", lambda **kwargs: RecordingLLM(**kwargs))
+    project = {**PROJECT, "language": code}
+
+    generator = ReleaseNotesGenerator(model="GPT-5.4", temperature=0.5)
+    generator.generate(ANALYSIS, project)
+
+    system_message = generator._llm.messages[0]
+    assert f"Write the release note in {expected}." in system_message.content
 
 
 def test_user_prompt_carries_the_analysis(monkeypatch):

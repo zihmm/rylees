@@ -19,6 +19,7 @@ class FakeApiClient:
             "name": "Member Portal",
             "key": "member-portal",
             "description": "A portal.",
+            "language": "de",
             "customer_name": "Acme Ltd.",
             "customer_industry": "Architecture",
             "llm_temperature": 0.5,

@@ -20,6 +20,7 @@ class ApiClient:
             name=data["name"],
             key=data["key"],
             description=data.get("description", ""),
+            language=data.get("language", "en"),
             customer_name=data["customer"]["name"],
             customer_industry=data["customer"]["industry"],
             llm_temperature=data["llm"]["temperature"],
