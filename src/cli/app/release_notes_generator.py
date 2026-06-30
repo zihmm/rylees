@@ -30,7 +30,10 @@ Rules:
 - Do NOT use technical jargon.
 - Write the release note in {language}.
 - Maximum 500 words.
+- Keep it as short as necessary
 - Keep the tone consistently {tonality} throughout.
+- Use paragraphs for longer texts.
+- Don’t address your audience
 - Describe what changed from the user's perspective, not how it was implemented.\
 """
 
