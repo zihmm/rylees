@@ -2,7 +2,7 @@
 import AppIcon from '../../../shared/icons/AppIcon.vue';
 
 defineProps({
-  variant: { type: String, default: 'primary' }, // 'primary' | 'secondary'
+  variant: { type: String, default: 'primary' }, // 'primary' | 'secondary' | 'danger'
   size: { type: String, default: 'md' }, // 'md' | 'lg'
   icon: { type: String, default: '' },
   type: { type: String, default: 'button' },
@@ -17,7 +17,7 @@ defineProps({
     :disabled="disabled || loading"
     class="relative inline-flex items-center justify-center gap-2 rounded-field font-medium text-white transition-colors disabled:bg-field-border disabled:cursor-default"
     :class="[
-      variant === 'secondary' ? 'bg-field-border' : 'bg-accent',
+      variant === 'secondary' ? 'bg-field-border' : variant === 'danger' ? 'bg-danger' : 'bg-accent',
       size === 'lg' ? 'h-12 px-10 text-[15px]' : 'h-9 px-5 text-[13px]',
     ]"
   >

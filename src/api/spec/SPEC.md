@@ -959,6 +959,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/customers', [CustomerController::class, 'store']);
     Route::get('/customers/{customer}', [CustomerController::class, 'show']);
     Route::patch('/customers/{customer}', [CustomerController::class, 'update']);
+    Route::delete('/customers/{customer}', [CustomerController::class, 'destroy']);
 
     Route::post('/customers/{customer}/contacts', [ContactController::class, 'store']);
     Route::patch('/customers/{customer}/contacts/{contact}', [ContactController::class, 'update']);
@@ -973,6 +974,7 @@ public function index(ListCustomersRequest $request): JsonResponse   // 200 pagi
 public function store(StoreCustomerRequest $request): JsonResponse   // 201
 public function show(Request $request, Customer $customer): JsonResponse // 200
 public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse // 200
+public function destroy(Request $request, Customer $customer): JsonResponse // 204
 ```
 
 **Authorization on all customer endpoints:** Verify `$customer->user_id === auth()->id()`. If not, return `404 not_found` (do not expose existence to other users).
@@ -1105,6 +1107,13 @@ Contacts are NOT updatable through this endpoint. PATCH /customers/{id} does not
   ]
 }
 ```
+
+`DELETE /customers/{id}` logic (cascades — 204 on success):
+1. For every `Project` owned by the customer: delete its `ReleaseHistory` (and every `ReleaseNote` under it), then soft-delete the `Project` row (delegated to `ProjectService::destroy`, which in turn delegates release-history cleanup to `ReleaseHistoryService::deleteForProject`).
+2. Soft-delete every `CustomerContact` owned by the customer.
+3. Soft-delete the `Customer` row.
+
+All of the above runs inside a single `DB::transaction`. Every delete is a soft-delete (`SoftDeletes` on all five models) — there is no DB-level `onDelete('cascade')`.
 
 **Contact CRUD (`ContactController`)**
 

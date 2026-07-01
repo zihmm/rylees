@@ -50,4 +50,9 @@ final class ProjectRepository
     {
         return $project->load(['customer.organisation', 'customer.industry', 'tonality', 'temperature']);
     }
+
+    public function delete(Project $project): void
+    {
+        $project->delete();
+    }
 }

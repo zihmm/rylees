@@ -104,6 +104,20 @@ final class ProjectService
     }
 
     /**
+     * Cascade-delete a project. The ReleaseHistory module owns cleanup of the
+     * release history/notes that back it — delegate instead of touching those
+     * tables here — before the project row itself is soft-deleted.
+     */
+    public function destroy(Project $project): void
+    {
+        DB::transaction(function () use ($project): void
+        {
+            $this->releaseHistories->deleteForProject($project->id);
+            $this->projects->delete($project);
+        });
+    }
+
+    /**
      * @param  array<string, mixed>  $source
      * @param  array<int, string>  $keys
      * @return array<string, mixed>

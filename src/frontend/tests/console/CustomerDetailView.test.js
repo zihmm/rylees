@@ -10,7 +10,7 @@ const Blank = { template: '<div />' };
 
 const ConsoleLayoutStub = {
   name: 'ConsoleLayout',
-  template: '<div><slot /><slot name="sidebar" /></div>',
+  template: '<div><slot /><slot name="sidebar" /><slot name="footer-actions" /></div>',
 };
 
 const customer = {
@@ -38,6 +38,7 @@ function makeRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: '/customers', name: 'customers', component: Blank },
       { path: '/customers/:id', name: 'customer-detail', component: CustomerDetailView },
       { path: '/customers/:id/edit', name: 'customer-edit', component: Blank },
       { path: '/customers/:customerId/projects/new', name: 'project-create', component: Blank },
@@ -92,5 +93,61 @@ describe('CustomerDetailView', () => {
     const links = wrapper.findAll('a').map((a) => a.attributes('href'));
     expect(links.some((h) => h && h.includes('/customers/c1/projects/p1'))).toBe(true);
     expect(links.some((h) => h && h.includes('/customers/c1/projects/p2'))).toBe(true);
+  });
+
+  test('renders a Delete customer button styled as danger', async () => {
+    const { wrapper } = await mountView();
+    const button = wrapper.findAll('button').find((b) => b.text() === 'Delete customer');
+    expect(button).toBeTruthy();
+    expect(button.classes()).toContain('bg-danger');
+  });
+
+  test('clicking Delete customer shows a warning confirmation dialog without calling the API', async () => {
+    const { wrapper } = await mountView();
+
+    expect(wrapper.text()).not.toContain('Delete this customer?');
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Delete customer').trigger('click');
+
+    expect(wrapper.text()).toContain('Delete this customer?');
+    expect(api.deleteCustomer).not.toHaveBeenCalled();
+  });
+
+  test('cancelling the confirmation dialog does not delete the customer', async () => {
+    const { wrapper } = await mountView();
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Delete customer').trigger('click');
+    await wrapper.findAll('button').find((b) => b.text() === 'Cancel').trigger('click');
+
+    expect(wrapper.text()).not.toContain('Delete this customer?');
+    expect(api.deleteCustomer).not.toHaveBeenCalled();
+  });
+
+  test('confirming deletion calls the API and redirects to the customers list', async () => {
+    api.deleteCustomer.mockResolvedValue({});
+    const { wrapper, router } = await mountView();
+    const pushSpy = jest.spyOn(router, 'push');
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Delete customer').trigger('click');
+    // Scope to the confirm dialog itself: a contact row also has a "Delete" button.
+    const dialog = wrapper.find('.fixed.inset-0');
+    await dialog.findAll('button').find((b) => b.text() === 'Delete').trigger('click');
+    await flushPromises();
+
+    expect(api.deleteCustomer).toHaveBeenCalledWith('c1');
+    expect(pushSpy).toHaveBeenCalledWith('/customers');
+  });
+
+  test('shows an error notification and keeps the dialog closed when deletion fails', async () => {
+    api.deleteCustomer.mockRejectedValue({ response: { data: { message: 'Nope' } } });
+    const { wrapper } = await mountView();
+
+    await wrapper.findAll('button').find((b) => b.text() === 'Delete customer').trigger('click');
+    const dialog = wrapper.find('.fixed.inset-0');
+    await dialog.findAll('button').find((b) => b.text() === 'Delete').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Could not delete customer');
+    expect(wrapper.text()).not.toContain('Delete this customer?');
   });
 });

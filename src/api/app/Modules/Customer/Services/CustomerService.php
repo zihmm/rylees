@@ -11,6 +11,7 @@ use App\Modules\Customer\Repositories\ContactRepository;
 use App\Modules\Customer\Repositories\CustomerRepository;
 use App\Modules\Customer\Resources\ContactResource;
 use App\Modules\Customer\Resources\CustomerDetailResource;
+use App\Modules\Project\Services\ProjectService;
 use Illuminate\Support\Facades\DB;
 
 final class CustomerService
@@ -18,6 +19,7 @@ final class CustomerService
     public function __construct(
         private readonly CustomerRepository $customers,
         private readonly ContactRepository $contacts,
+        private readonly ProjectService $projects,
     ) {}
 
     /**
@@ -160,6 +162,28 @@ final class CustomerService
                 $customer->main_contact_id = null;
                 $customer->save();
             }
+        });
+    }
+
+    /**
+     * Cascade-delete a customer: every project it owns (which in turn cascades
+     * to that project's release history/notes via the Project module) and
+     * every contact are removed before the customer row itself is
+     * soft-deleted, all inside one transaction so the tree never ends up
+     * half-deleted.
+     */
+    public function destroy(Customer $customer): void
+    {
+        DB::transaction(function () use ($customer): void
+        {
+            foreach ($customer->projects()->get() as $project)
+            {
+                $this->projects->destroy($project);
+            }
+
+            $customer->contacts()->delete();
+
+            $this->customers->delete($customer);
         });
     }
 
