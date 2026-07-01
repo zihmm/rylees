@@ -167,10 +167,10 @@ The Backend API and both web apps run locally in Docker with a single command. O
 ### Prerequisites
 
 - [Docker](https://www.docker.com/) (Desktop or Engine) with Compose v2
-- The three local hostnames resolving to `127.0.0.1`. Add to `/etc/hosts`:
+- The four local hostnames resolving to `127.0.0.1`. Add to `/etc/hosts`:
 
   ```
-  127.0.0.1  api.rylees.test console.rylees.test acme.rylees.test
+  127.0.0.1  rylees.test api.rylees.test console.rylees.test acme.rylees.test
   ```
 
   `acme` stands in for a customer slug — add more slugs as needed, or point a local dnsmasq at `*.rylees.test` to avoid editing hosts each time.
@@ -188,6 +188,7 @@ On first start the API container generates the app key, waits for PostgreSQL, th
 
 | URL                                         | What it serves                              |
 | :------------------------------------------ | :------------------------------------------ |
+| `http://rylees.test`                        | Redirects to the Developer Console          |
 | `http://api.rylees.test/v1`                 | Backend API                                 |
 | `http://console.rylees.test`                | Developer Console                           |
 | `http://acme.rylees.test/{project-key}`     | Public Release History (slug = subdomain)   |

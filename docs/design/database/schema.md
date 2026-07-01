@@ -350,8 +350,9 @@ The platform uses three DNS records for `rylees.ai`:
 | `console.rylees.ai` | A | Frontend server | Developer Console SPA |
 | `*.rylees.ai` | A (wildcard) | Frontend server | Customer Release History subdomains |
 
-Specific A records take precedence over the wildcard, so `api` and `console` are unaffected. The frontend server uses three nginx server blocks:
+Specific A records take precedence over the wildcard, so `api` and `console` are unaffected. The frontend server uses four nginx server blocks:
 
+- `rylees.ai` (bare root) → 301 redirect to `console.rylees.ai`
 - `api.rylees.ai` → PHP-FPM proxied to Laravel (`public/index.php`)
 - `console.rylees.ai` → serves `dist/console.html` as the SPA root
 - `~^(?<subdomain>.+)\.rylees\.ai$` (wildcard, excludes `console` and `api`) → serves `dist/history.html`

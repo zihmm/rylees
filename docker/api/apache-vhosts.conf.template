@@ -54,12 +54,36 @@
 </VirtualHost>
 
 # ---------------------------------------------------------------------------
-# <domain> and *.<domain> — Public Release History SPA (wildcard subdomain).
-# Exact api./console. ServerNames above take priority over this wildcard
-# ServerAlias, so every other slug (acme., doe-digital., …) lands here.
+# <domain> — bare root domain: redirect to the Developer Console.
+# Exact ServerName match, so it takes priority over the wildcard ServerAlias
+# below (Apache prefers exact matches over wildcards on the same IP:port).
+# Scheme mirrors the inbound request: Fly terminates TLS at its edge and
+# forwards plain HTTP internally, flagging the original scheme via
+# X-Forwarded-Proto; local dev has no TLS at all, so it falls back to http.
 # ---------------------------------------------------------------------------
 <VirtualHost *:80>
     ServerName ${APP_DOMAIN}
+
+    RewriteEngine On
+    RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
+    RewriteCond %{HTTPS} =on
+    RewriteRule ^ https://console.${APP_DOMAIN}%{REQUEST_URI} [R=301,L]
+    RewriteRule ^ http://console.${APP_DOMAIN}%{REQUEST_URI} [R=301,L]
+
+    ErrorLog ${APACHE_LOG_DIR}/root-redirect-error.log
+    CustomLog ${APACHE_LOG_DIR}/root-redirect-access.log combined
+</VirtualHost>
+
+# ---------------------------------------------------------------------------
+# *.<domain> — Public Release History SPA (wildcard subdomain).
+# Exact api./console./bare-domain ServerNames above take priority over this
+# wildcard ServerAlias, so every customer slug (acme., doe-digital., …) lands
+# here. ServerName is a placeholder — it never resolves — because a
+# VirtualHost requires one, but only the ServerAlias wildcard is meant to
+# match real traffic.
+# ---------------------------------------------------------------------------
+<VirtualHost *:80>
+    ServerName customers.${APP_DOMAIN}
     ServerAlias *.${APP_DOMAIN}
     DocumentRoot /var/www/frontend
 
