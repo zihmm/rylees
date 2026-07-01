@@ -1,4 +1,4 @@
-name: Deployment
+name: Deploy
 
 # Deploy the rylees web app after the Tests workflow passes on main (i.e. when a
 # PR is merged). Chained off Tests via `workflow_run` so a red suite blocks the
