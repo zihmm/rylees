@@ -30,6 +30,11 @@ const face = ref('a');
 
 const { currentVersion, majorGroups } = useVersionGrouping(displayItems);
 
+// True once the project has loaded and it genuinely has zero release notes —
+// guarded on `project` (not just `displayItems.length === 0`) so the empty
+// state doesn't flash during the initial fetch before data arrives.
+const isEmpty = computed(() => project.value !== null && displayItems.value.length === 0);
+
 // --- Release notes pagination (4 per page) ---
 const PAGE_SIZE = 4;
 const page = ref(0);
@@ -159,7 +164,7 @@ defineExpose({ switchLanguage, face, activeLanguage });
 </script>
 
 <template>
-  <HistoryCard :project-name="project?.name || ''">
+  <HistoryCard :project-name="project?.name || ''" :hide-header-extras="isEmpty">
     <!-- State label per view -->
     <template #label>
       <span
@@ -195,9 +200,23 @@ defineExpose({ switchLanguage, face, activeLanguage });
       </button>
     </template>
 
+    <!-- Empty state: no release notes published yet — replaces the slider
+         entirely (no version label, no history toggle, see HistoryCard). -->
+    <div
+      v-if="isEmpty"
+      class="flex items-center gap-[15px] rounded-[5px] border px-[15px] py-4 bg-[#fefbed] border-[#f1f0d7]"
+    >
+      <AppIcon name="shield-exclamation" :size="25" class="shrink-0 text-[#d5ad57]" />
+      <div class="min-w-0">
+        <p class="text-[14px] font-medium leading-none text-[#d5ad57]">No Releases yet</p>
+        <p class="text-[14px] text-black leading-[18px] mt-1.5">There are currently no release notes</p>
+      </div>
+    </div>
+
     <!-- Slider: both views sit side by side; the track slides horizontally and
          the viewport height animates to the active view. -->
     <div
+      v-else
       class="slider-viewport"
       :class="{ 'animate-height': animateHeight }"
       :style="{ height: contentHeight !== null ? contentHeight + 'px' : undefined }"

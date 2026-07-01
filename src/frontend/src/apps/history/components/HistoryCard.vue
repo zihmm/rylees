@@ -1,6 +1,9 @@
 <script setup>
 defineProps({
   projectName: { type: String, default: '' },
+  // When true, hides the header divider + label/button slots — used for the
+  // empty state (no release notes yet), where only the project name shows.
+  hideHeaderExtras: { type: Boolean, default: false },
 });
 </script>
 
@@ -13,10 +16,12 @@ defineProps({
           <h1 class="text-[20px] leading-[22px] font-semibold uppercase text-title truncate">
             {{ projectName }}
           </h1>
-          <span class="h-5 w-px bg-card-border shrink-0" aria-hidden="true"></span>
-          <slot name="label" />
+          <template v-if="!hideHeaderExtras">
+            <span class="h-5 w-px bg-card-border shrink-0" aria-hidden="true"></span>
+            <slot name="label" />
+          </template>
         </div>
-        <div class="shrink-0">
+        <div v-if="!hideHeaderExtras" class="shrink-0">
           <slot name="button" />
         </div>
       </header>
