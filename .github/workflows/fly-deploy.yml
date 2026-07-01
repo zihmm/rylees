@@ -45,3 +45,14 @@ jobs:
       - run: flyctl deploy --remote-only --config fly.toml --app rylees
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # Post-deploy smoke test: Laravel's built-in health check route
+      # (bootstrap/app.php: health: '/up') only returns 2xx once the app has
+      # booted successfully. Retry for a bit to ride out the brief window
+      # while the new machine comes up, then fail the job (and thus surface a
+      # red workflow) if the API never becomes healthy.
+      - name: Smoke test /up endpoint
+        run: |
+          curl --fail --silent --show-error \
+            --retry 5 --retry-delay 5 --retry-all-errors \
+            https://api.rylees.ai/up
