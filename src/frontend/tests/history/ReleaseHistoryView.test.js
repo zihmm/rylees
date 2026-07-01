@@ -102,6 +102,42 @@ describe('ReleaseHistoryView', () => {
     expect(router.currentRoute.value.name).toBe('not-found');
   });
 
+  test('shows the empty state when the project has zero release notes', async () => {
+    api.getReleaseHistory.mockResolvedValue({
+      data: { project: { id: 'p1', name: 'Member Portal', key: KEY, language: 'de' }, items: [] },
+    });
+    const { wrapper } = await mountView();
+
+    // Message matches the empty state exactly, in place of the timeline/history slider.
+    expect(wrapper.text()).toContain('No Releases yet');
+    expect(wrapper.text()).toContain('There are currently no release notes');
+
+    // Version label and the "Version history" toggle button are hidden.
+    expect(wrapper.text()).not.toMatch(/^v(\d|null|undefined)?$/m);
+    expect(wrapper.find('[aria-label="Show release history"]').exists()).toBe(false);
+    expect(wrapper.find('[aria-label="Back to release notes"]').exists()).toBe(false);
+  });
+
+  test('does not show the empty state while the initial fetch is still pending', async () => {
+    let resolveFetch;
+    api.getReleaseHistory.mockReturnValue(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    const { wrapper } = await mountView();
+
+    // Before the project has loaded, the empty state must not flash even
+    // though displayItems is (still) an empty array.
+    expect(wrapper.text()).not.toContain('No Releases yet');
+
+    resolveFetch({
+      data: { project: { id: 'p1', name: 'Member Portal', key: KEY, language: 'de' }, items: [] },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('No Releases yet');
+  });
+
   test('switching to EN calls translate endpoint and replaces bodies', async () => {
     api.translateReleaseHistory.mockResolvedValue({
       data: {
