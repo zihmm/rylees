@@ -19,6 +19,24 @@ final class ReleaseHistoryRepository
         return ReleaseHistory::create(['project_id' => $projectId]);
     }
 
+    public function findForProject(string $projectId): ?ReleaseHistory
+    {
+        return ReleaseHistory::query()->where('project_id', $projectId)->first();
+    }
+
+    /**
+     * Bulk soft-delete every note under the given history in one query.
+     */
+    public function deleteNotes(ReleaseHistory $history): void
+    {
+        $history->releaseNotes()->delete();
+    }
+
+    public function delete(ReleaseHistory $history): void
+    {
+        $history->delete();
+    }
+
     public function latestNote(ReleaseHistory $history): ?ReleaseNote
     {
         return $history->releaseNotes()

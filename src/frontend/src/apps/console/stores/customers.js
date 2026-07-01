@@ -5,6 +5,7 @@ import {
   getCustomer,
   createCustomer,
   updateCustomer,
+  deleteCustomer,
 } from '../../../shared/api.js';
 
 export const useCustomersStore = defineStore('customers', () => {
@@ -34,6 +35,11 @@ export const useCustomersStore = defineStore('customers', () => {
     return response.data;
   }
 
+  async function removeCustomer(id) {
+    await deleteCustomer(id);
+    if (currentCustomer.value?.id === id) currentCustomer.value = null;
+  }
+
   return {
     customers,
     currentCustomer,
@@ -42,5 +48,6 @@ export const useCustomersStore = defineStore('customers', () => {
     fetchCustomer,
     storeCustomer,
     patchCustomer,
+    removeCustomer,
   };
 });

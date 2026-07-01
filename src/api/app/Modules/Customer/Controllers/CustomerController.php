@@ -65,6 +65,15 @@ final class CustomerController
         return response()->json($result);
     }
 
+    public function destroy(Request $request, Customer $customer): JsonResponse
+    {
+        $this->authorizeCustomer($customer);
+
+        $this->service->destroy($customer);
+
+        return response()->json(null, 204);
+    }
+
     private function authorizeCustomer(Customer $customer): void
     {
         if ($customer->user_id !== auth()->id())

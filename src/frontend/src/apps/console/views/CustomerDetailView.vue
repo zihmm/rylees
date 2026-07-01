@@ -6,6 +6,8 @@ import { createContact, updateContact, deleteContact } from '../../../shared/api
 import ConsoleLayout from '../components/ConsoleLayout.vue';
 import AppButton from '../components/AppButton.vue';
 import AppIcon from '../../../shared/icons/AppIcon.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
+import Notification from '../components/Notification.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,6 +21,10 @@ const editingId = ref(null);
 const submitting = ref(false);
 const blank = () => ({ firstname: '', lastname: '', email: '' });
 const draft = reactive(blank());
+
+const showDeleteConfirm = ref(false);
+const deleting = ref(false);
+const notification = ref(null);
 
 onMounted(() => store.fetchCustomer(customerId));
 
@@ -60,6 +66,23 @@ async function removeContact(id) {
   await deleteContact(customerId, id);
   await reload();
 }
+
+async function confirmDeleteCustomer() {
+  deleting.value = true;
+  try {
+    await store.removeCustomer(customerId);
+    router.push('/customers');
+  } catch (e) {
+    showDeleteConfirm.value = false;
+    notification.value = {
+      type: 'error',
+      title: 'Could not delete customer',
+      message: e.response?.data?.message || 'Something went wrong. Please try again.',
+    };
+  } finally {
+    deleting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -68,6 +91,8 @@ async function removeContact(id) {
     :parent="{ label: 'Customers', to: '/customers' }"
     :current="customer.organisation?.name || ''"
   >
+    <Notification v-if="notification" v-bind="notification" class="mb-8" />
+
     <!-- Info panel -->
     <section class="rounded-card border border-field-border p-6 mb-8">
       <div class="flex items-start justify-between">
@@ -143,5 +168,21 @@ async function removeContact(id) {
         <li v-if="!customer.projects?.length" class="p-4 text-meta text-[14px]">No projects yet.</li>
       </ul>
     </section>
+
+    <template #footer-actions>
+      <AppButton variant="danger" @click="showDeleteConfirm = true">Delete customer</AppButton>
+    </template>
   </ConsoleLayout>
+
+  <ConfirmDialog
+    v-if="showDeleteConfirm"
+    title="Delete this customer?"
+    confirm-label="Delete"
+    :loading="deleting"
+    @cancel="showDeleteConfirm = false"
+    @confirm="confirmDeleteCustomer"
+  >
+    This will permanently delete <strong>{{ customer?.organisation?.name }}</strong>, along with its
+    contacts, projects and release notes. This action cannot be undone.
+  </ConfirmDialog>
 </template>

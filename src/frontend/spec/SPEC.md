@@ -316,6 +316,11 @@ export const updateCustomer = (id, payload) =>
   apiClient.patch(`/customers/${id}`, payload);
 // payload (all optional): { organisation: { name, street, postcode, city, website, email }, industry_id, description }
 // Response 200: same as GET /customers/{id}
+
+export const deleteCustomer = (id) =>
+  apiClient.delete(`/customers/${id}`);
+// Cascades server-side: every contact, every project (and that project's release
+// history/notes) is deleted along with the customer. Response 204.
 ```
 
 ### Contact API functions
@@ -490,7 +495,7 @@ export const useAuthStore = defineStore('auth', () => {
 ```javascript
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getCustomers, getCustomer, createCustomer, updateCustomer } from '../../../shared/api.js';
+import { getCustomers, getCustomer, createCustomer, updateCustomer, deleteCustomer } from '../../../shared/api.js';
 
 export const useCustomersStore = defineStore('customers', () => {
   const customers = ref([]);
@@ -519,7 +524,12 @@ export const useCustomersStore = defineStore('customers', () => {
     return response.data;
   }
 
-  return { customers, currentCustomer, pagination, fetchCustomers, fetchCustomer, storeCustomer, patchCustomer };
+  async function removeCustomer(id) {
+    await deleteCustomer(id);
+    if (currentCustomer.value?.id === id) currentCustomer.value = null;
+  }
+
+  return { customers, currentCustomer, pagination, fetchCustomers, fetchCustomer, storeCustomer, patchCustomer, removeCustomer };
 });
 ```
 
@@ -788,6 +798,8 @@ On page change: call `fetchCustomers(newPage, perPage)`.
 - "Add Project" button links to `/customers/{id}/projects/new`
 
 **"Edit customer" button** links to `/customers/{id}/edit`.
+
+**Delete customer:** a "Delete customer" button, pinned in the layout's `footer-actions` slot at the bottom of the screen, styled `bg-danger` (`rgb(223 94 112)` / `#df5e70`). Clicking it opens a `ConfirmDialog` warning that the customer's contacts, projects and release notes will also be deleted; confirming calls `removeCustomer(customerId)` (store action wrapping `deleteCustomer(id)`) and redirects to `/customers`. A failed delete shows an error `Notification` instead of navigating away.
 
 ### 9.8 CustomerEditView
 

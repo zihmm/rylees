@@ -68,4 +68,9 @@ final class CustomerRepository
 
         return $customer;
     }
+
+    public function delete(Customer $customer): void
+    {
+        $customer->delete();
+    }
 }
