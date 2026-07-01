@@ -26,6 +26,7 @@ const tonalities = ref([]);
 const temperatures = ref([]);
 const errors = ref({});
 const saving = ref(false);
+const deleting = ref(false);
 const token = ref('');
 const projectName = ref('');
 const releaseNotes = ref([]);
@@ -86,6 +87,17 @@ async function save() {
     saving.value = false;
   }
 }
+
+async function destroy() {
+  if (!confirm('Delete this project? This will also delete its release history and release notes. This action cannot be undone.')) return;
+  deleting.value = true;
+  try {
+    await store.removeProject(customerId, id);
+    router.push('/projects');
+  } finally {
+    deleting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -105,7 +117,8 @@ async function save() {
 
     <template #footer-actions>
       <AppButton variant="secondary" @click="router.push('/projects')">Cancel</AppButton>
-      <AppButton icon="check" :loading="saving" @click="save">Save</AppButton>
+      <AppButton variant="danger" :loading="deleting" :disabled="saving" @click="destroy">Delete</AppButton>
+      <AppButton icon="check" :loading="saving" :disabled="deleting" @click="save">Save</AppButton>
     </template>
   </ConsoleLayout>
 </template>

@@ -255,3 +255,46 @@ test('test_list_all_projects_requires_authentication', function (): void
 {
     $this->getJson('/v1/projects')->assertStatus(401);
 });
+
+test('test_delete_project_cascades_to_release_history_and_notes', function (): void
+{
+    $user = User::factory()->create();
+    $customer = Customer::factory()->create(['user_id' => $user->id]);
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+    $history = ReleaseHistory::factory()->create(['project_id' => $project->id]);
+    $note = ReleaseNote::factory()->create([
+        'release_history_id' => $history->id,
+        'author_id' => $user->id,
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->deleteJson("/v1/customers/{$customer->id}/projects/{$project->id}");
+
+    $response->assertStatus(204);
+    $this->assertSoftDeleted('projects', ['id' => $project->id]);
+    $this->assertSoftDeleted('release_histories', ['id' => $history->id]);
+    $this->assertSoftDeleted('release_notes', ['id' => $note->id]);
+});
+
+test('test_cannot_delete_project_of_other_users_customer', function (): void
+{
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    $theirs = Customer::factory()->create(['user_id' => $other->id]);
+    $project = Project::factory()->create(['customer_id' => $theirs->id]);
+
+    $response = $this->actingAs($user, 'sanctum')
+        ->deleteJson("/v1/customers/{$theirs->id}/projects/{$project->id}");
+
+    $response->assertStatus(404)->assertJsonPath('code', 'not_found');
+    $this->assertDatabaseHas('projects', ['id' => $project->id, 'deleted_at' => null]);
+});
+
+test('test_delete_project_requires_authentication', function (): void
+{
+    $customer = Customer::factory()->create();
+    $project = Project::factory()->create(['customer_id' => $customer->id]);
+
+    $this->deleteJson("/v1/customers/{$customer->id}/projects/{$project->id}")
+        ->assertStatus(401);
+});
