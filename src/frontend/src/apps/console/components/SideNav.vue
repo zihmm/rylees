@@ -61,9 +61,14 @@ onMounted(async () => {
       <div v-if="currentProjects.length" class="px-4 mt-8">
         <p class="px-2 text-[14px] font-medium text-[#777] mb-2">Current Projects</p>
         <ul>
-          <li v-for="(p, i) in currentProjects" :key="p.id || i" class="flex items-center gap-3 px-2 py-2 text-[14px] text-ink">
-            <StatusDot :variant="dotVariants[i % dotVariants.length]" />
-            <span class="truncate">{{ p.name }}</span>
+          <li v-for="(p, i) in currentProjects" :key="p.id || i">
+            <RouterLink
+              :to="{ name: 'project-detail', params: { customerId: p.customer_id, id: p.id } }"
+              class="flex items-center gap-3 px-2 py-2 text-[14px] text-ink rounded hover:text-black"
+            >
+              <StatusDot :variant="dotVariants[i % dotVariants.length]" />
+              <span class="truncate">{{ p.name }}</span>
+            </RouterLink>
           </li>
         </ul>
       </div>
