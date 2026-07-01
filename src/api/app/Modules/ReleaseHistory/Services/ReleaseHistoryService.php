@@ -36,6 +36,16 @@ final class ReleaseHistoryService
     }
 
     /**
+     * Cascade-delete the release history (and its release notes) that backs a
+     * project. Public entry point for the Project module (keeps release_notes
+     * and release_histories writes inside the owning module).
+     */
+    public function deleteForProject(string $projectId): void
+    {
+        $this->repository->deleteForProject($projectId);
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */

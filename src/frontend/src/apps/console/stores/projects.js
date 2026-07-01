@@ -5,6 +5,7 @@ import {
   getProject,
   createProject,
   updateProject,
+  deleteProject,
   getAllProjects,
 } from '../../../shared/api.js';
 
@@ -39,6 +40,11 @@ export const useProjectsStore = defineStore('projects', () => {
     return response.data;
   }
 
+  async function removeProject(customerId, id) {
+    await deleteProject(customerId, id);
+    currentProject.value = null;
+  }
+
   return {
     projects,
     allProjects,
@@ -48,5 +54,6 @@ export const useProjectsStore = defineStore('projects', () => {
     fetchProject,
     storeProject,
     patchProject,
+    removeProject,
   };
 });

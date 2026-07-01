@@ -74,6 +74,16 @@ final class ProjectController
         return response()->json($result);
     }
 
+    public function destroy(Request $request, string $customer, Project $project): JsonResponse
+    {
+        $owned = $this->resolveOwnedCustomer($customer);
+        $this->ensureProjectBelongsTo($project, $owned->id);
+
+        $this->service->destroy($project);
+
+        return response()->json(null, 204);
+    }
+
     public function showByToken(Request $request, string $projectToken): JsonResponse
     {
         $project = $this->service->findByToken($projectToken);

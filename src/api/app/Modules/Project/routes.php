@@ -14,6 +14,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function ()
     Route::post('/customers/{customer}/projects', [ProjectController::class, 'store']);
     Route::get('/customers/{customer}/projects/{project}', [ProjectController::class, 'show']);
     Route::patch('/customers/{customer}/projects/{project}', [ProjectController::class, 'update']);
+    Route::delete('/customers/{customer}/projects/{project}', [ProjectController::class, 'destroy']);
 
     // CLI generation — resolves a project by its token (used by the rylees CLI).
     Route::get('/projects/{projectToken}', [ProjectController::class, 'showByToken']);

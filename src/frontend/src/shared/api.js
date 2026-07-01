@@ -87,6 +87,9 @@ export const createProject = (customerId, payload) =>
 export const updateProject = (customerId, id, payload) =>
   apiClient.patch(`/customers/${customerId}/projects/${id}`, payload);
 
+export const deleteProject = (customerId, id) =>
+  apiClient.delete(`/customers/${customerId}/projects/${id}`);
+
 /* ---- Projects (global overview) ----
  * GET /projects — developer-wide project overview (SPEC §7.4). Returns every
  * non-deleted project across all of the developer's customers, ordered by

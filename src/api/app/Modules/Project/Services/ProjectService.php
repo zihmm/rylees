@@ -104,6 +104,23 @@ final class ProjectService
     }
 
     /**
+     * Delete a project and cascade the deletion to its release history and
+     * release notes. Both the project and its dependants use SoftDeletes, so
+     * this is a soft delete consistent with the rest of the app.
+     */
+    public function destroy(Project $project): void
+    {
+        DB::transaction(function () use ($project): void
+        {
+            // Deleting the release history is the ReleaseHistory module's
+            // responsibility — delegate instead of touching its tables here.
+            $this->releaseHistories->deleteForProject($project->id);
+
+            $project->delete();
+        });
+    }
+
+    /**
      * @param  array<string, mixed>  $source
      * @param  array<int, string>  $keys
      * @return array<string, mixed>
