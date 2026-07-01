@@ -12,6 +12,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function (): void
     Route::post('/customers', [CustomerController::class, 'store']);
     Route::get('/customers/{customer}', [CustomerController::class, 'show']);
     Route::patch('/customers/{customer}', [CustomerController::class, 'update']);
+    Route::delete('/customers/{customer}', [CustomerController::class, 'destroy']);
 
     Route::post('/customers/{customer}/contacts', [ContactController::class, 'store']);
     Route::patch('/customers/{customer}/contacts/{contact}', [ContactController::class, 'update']);

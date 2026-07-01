@@ -64,6 +64,8 @@ export const createCustomer = (payload) => apiClient.post('/customers', payload)
 export const updateCustomer = (id, payload) =>
   apiClient.patch(`/customers/${id}`, payload);
 
+export const deleteCustomer = (id) => apiClient.delete(`/customers/${id}`);
+
 /* ---- Contacts ---- */
 export const createContact = (customerId, payload) =>
   apiClient.post(`/customers/${customerId}/contacts`, payload);
