@@ -204,7 +204,7 @@ defineExpose({ switchLanguage, face, activeLanguage });
          entirely (no version label, no history toggle, see HistoryCard). -->
     <div
       v-if="isEmpty"
-      class="flex items-center gap-[15px] rounded-[5px] border px-[15px] py-4 bg-[#fefbed] border-[#f1f0d7]"
+      class="flex items-center gap-[15px] rounded-[5px] border px-[15px] py-4 bg-[#fefbed] border-[#f1f0d7] mb-6 sm:mb-12"
     >
       <AppIcon name="shield-exclamation" :size="25" class="shrink-0 text-[#d5ad57]" />
       <div class="min-w-0">
