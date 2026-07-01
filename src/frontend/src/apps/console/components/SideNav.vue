@@ -11,13 +11,16 @@ const route = useRoute();
 const projectsStore = useProjectsStore();
 
 const nav = [
-  { name: 'dashboard', to: { name: 'dashboard' }, label: 'Dashboard', icon: 'dashboard', match: '/dashboard' },
-  { name: 'customers', to: { name: 'customers' }, label: 'Customers', icon: 'briefcase', match: '/customers' },
-  { name: 'projects', to: { name: 'projects' }, label: 'Projects', icon: 'folder', match: '/projects' },
+  { name: 'dashboard', to: { name: 'dashboard' }, label: 'Dashboard', icon: 'dashboard', section: 'dashboard' },
+  { name: 'customers', to: { name: 'customers' }, label: 'Customers', icon: 'briefcase', section: 'customers' },
+  { name: 'projects', to: { name: 'projects' }, label: 'Projects', icon: 'folder', section: 'projects' },
 ];
 
-function isActive(match) {
-  return route.path === match || route.path.startsWith(match + '/');
+// Active state is driven by the route's `navSection` meta rather than the URL path:
+// project routes (e.g. project detail/edit) live under /customers/:customerId/projects/...
+// for resource nesting, but they belong to the "Projects" nav item, not "Customers" (PRI-37).
+function isActive(section) {
+  return route.meta.navSection === section;
 }
 
 // Show the most recently updated projects (the endpoint returns all, newest first).
@@ -49,7 +52,7 @@ onMounted(async () => {
             <RouterLink
               :to="item.to"
               class="flex items-center gap-3 px-2 py-2.5 text-[14px] font-medium rounded"
-              :class="isActive(item.match) ? 'text-accent' : 'text-ink hover:text-black'"
+              :class="isActive(item.section) ? 'text-accent' : 'text-ink hover:text-black'"
             >
               <AppIcon :name="item.icon" :size="19" />
               {{ item.label }}
