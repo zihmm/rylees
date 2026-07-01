@@ -1,10 +1,11 @@
 # Docker
 
 One Apache + mod_php 8.5 image serves the Laravel API **and** the two built Vue
-SPAs over three vhosts, mirroring production subdomain routing.
+SPAs over four vhosts, mirroring production subdomain routing.
 
 | Host                       | Serves                                        |
 | -------------------------- | --------------------------------------------- |
+| `<domain>` (bare root)     | 301 redirect to `console.<domain>`            |
 | `api.<domain>`             | Laravel API (`src/api/public`)                |
 | `console.<domain>`         | Developer Console SPA                         |
 | `*.<domain>` (wildcard)    | Public Release History SPA (slug from hostname) |
@@ -38,14 +39,15 @@ that build dir, so subdomain routing matches production.
 `/etc/hosts` cannot wildcard, so add the subdomains you want to test:
 
 ```
-127.0.0.1  api.rylees.test console.rylees.test acme.rylees.test
+127.0.0.1  rylees.test api.rylees.test console.rylees.test acme.rylees.test
 ```
 
 For arbitrary `*.rylees.test` slugs without editing hosts each time, point a
 local dnsmasq at `127.0.0.1` for `.rylees.test`.
 
 Then open `http://console.rylees.test`, `http://acme.rylees.test/<project-key>`,
-and call the API at `http://api.rylees.test/v1/...`.
+and call the API at `http://api.rylees.test/v1/...`. Visiting the bare
+`http://rylees.test` redirects to `http://console.rylees.test`.
 
 ### Port 80 already in use?
 
@@ -231,7 +233,7 @@ reference data once, after the first successful deploy:
 fly ssh console --app rylees -C "php /var/www/api/artisan db:seed --force"
 ```
 
-Custom domains + TLS for the three vhosts (the Apache config matches on the Host
+Custom domains + TLS for the four vhosts (the Apache config matches on the Host
 header Fly forwards):
 
 ```bash
